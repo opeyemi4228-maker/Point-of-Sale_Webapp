@@ -1,0 +1,357 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Swiftgrocers POS — design tokens (SPEC §14)
+   Single source of truth. Do not introduce hex values outside this file.
+--------------------------------------------------------------------------- */
+
+@theme {
+  /* ---------------------------------------------------------------------
+     Colour — §14 Colour tokens.
+
+     The palette is drawn from `public/logo.png` and nothing else: the bag
+     green, the wordmark orange, and neutral black and white. The two literal
+     logo values are `--color-leaf` and `--color-zest`; every other brand token
+     is the same hue moved along lightness so that text can actually sit on it.
+
+       leaf  #69A320 — sampled from the bag        (3.06:1 on white)
+       zest  #FF5D0D — sampled from the wordmark   (3.08:1 on white)
+
+     Both logo values clear 3:1, which carries shapes, icons and large type but
+     not body text. So each has a `-deep` sibling at 5:1+ for anything a
+     cashier has to read, and a `-tint` wash for fills. Ratios are recorded per
+     token; if you change a value, re-check the pair it is used in.
+  --------------------------------------------------------------------- */
+
+  /* Neutrals — black and white, untinted. */
+  --color-ink: #000000; /* 21.00:1 on paper */
+  --color-ink-70: #4a4a4a; /*  8.49:1 on paper */
+  --color-ink-40: #6e6e6e; /*  4.89:1 on paper — the floor for hint text */
+  --color-paper: #fafafa;
+  --color-surface: #ffffff;
+  --color-line: #e4e4e4;
+
+  /* Brand green. `leaf` is the logo; `market` is the readable working weight. */
+  --color-leaf: #69a320; /* logo value — shapes and large type only */
+  --color-market: #4e7818; /*  5.22:1 on white, white 5.22:1 on it */
+  --color-market-dark: #3b5a12; /*  7.90:1 — hover and pressed */
+  --color-market-tint: #f1f8e8; /* market reads 4.80:1 on this */
+
+  /* Brand orange. Identity and emphasis — never a status. */
+  --color-zest: #ff5d0d; /* logo value — shapes and large type only */
+  --color-zest-deep: #c24000; /*  5.21:1 on white */
+  --color-zest-tint: #fff1e9; /* zest-deep reads 4.72:1 on this */
+
+  /* Attention. Yellow, in two weights, because one value cannot do both jobs:
+     a yellow bright enough to read as yellow is far too light to carry small
+     text, and a yellow dark enough to carry small text goes brown.
+
+     So `sun` is the colour you see — badges, chips, dots, shapes — always with
+     black on it. `signal` is the same hue run down to where a hairline border
+     or a caption still holds 4.5:1, and is never used as a large fill.
+
+     Never the only signal either way: an icon and a text label always ride
+     along (§14). */
+  --color-sun: #ffc531; /* black reads 13.28:1 on this; 5.00:1 on market-dark */
+  --color-signal: #8f6200; /* hue 41° vs zest 20° — 5.36:1 on white */
+  --color-signal-tint: #fff8e5; /* signal reads 5.06:1 on this */
+
+  --color-halt: #be251c; /* hue  3° — 6.05:1 on white */
+  --color-halt-tint: #fcecea; /* halt reads 5.28:1 on this */
+
+  --color-info: #1f5fd0; /*  5.82:1 on white */
+
+  /* Typography — §14 */
+  --font-display: var(--font-chivo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
+
+  /* ---------------------------------------------------------------------
+     Type scale — §14.
+
+     Two changes from the first cut, both because the dashboards read badly:
+
+     1. **Display sizes were too loose and too big.** 72px with a 76px line is
+        a poster, not a figure in a card; at that size a naira total wrapped in
+        the hero on a 13" laptop. The display sizes now step at roughly 1.25×
+        rather than 1.8×, and every one of them is set solid (line-height at or
+        just above 1.0), because a single-line number has no need of leading
+        and the extra space was what made the cards look empty and unaligned.
+
+     2. **Optical sizing and figure style are now explicit.** Display type sets
+        tighter tracking, since letterspacing that looks right at 16px looks
+        gappy at 40px. Numerals are lining and tabular by default so a column
+        of totals aligns without every component remembering to ask.
+  --------------------------------------------------------------------- */
+
+  --text-display-xl: 56px;
+  --text-display-xl--line-height: 1.02;
+  --text-display-xl--font-weight: 800;
+  --text-display-xl--letter-spacing: -0.03em;
+
+  --text-display-lg: 36px;
+  --text-display-lg--line-height: 1.06;
+  --text-display-lg--font-weight: 800;
+  --text-display-lg--letter-spacing: -0.025em;
+
+  --text-display-md: 28px;
+  --text-display-md--line-height: 1.14;
+  --text-display-md--font-weight: 700;
+  --text-display-md--letter-spacing: -0.02em;
+
+  --text-title: 20px;
+  --text-title--line-height: 1.35;
+  --text-title--font-weight: 700;
+  --text-title--letter-spacing: -0.01em;
+
+  --text-body-lg: 17px;
+  --text-body-lg--line-height: 1.5;
+
+  --text-body: 15px;
+  --text-body--line-height: 1.55;
+
+  /* The micro-label. 12px with open tracking reads as a deliberate label;
+     13px with the same tracking read as small body copy that had gone wrong. */
+  --text-label: 12px;
+  --text-label--line-height: 1.35;
+  --text-label--font-weight: 600;
+  --text-label--letter-spacing: 0.07em;
+
+  --text-mono: 14px;
+  --text-mono--line-height: 1.5;
+
+  /* Shape — §14 Spacing, shape and touch */
+  --radius-input: 8px;
+  --radius-card: 8px;
+  --radius-panel: 12px;
+  --radius-pill: 999px;
+
+  /* Elevation — one level only. Neutral black, so it never tints a surface. */
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.05);
+
+  /* Motion — §14 Motion. 120–180ms, ease-out. */
+  --ease-out-pos: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Touch targets — §14. Till is 56px, manager/HQ is 44px. */
+@theme {
+  --spacing-touch-till: 56px;
+  --spacing-touch-admin: 44px;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Lining, tabular figures everywhere by default. Money is the whole point
+       of this app and a column that does not align on the decimal cannot be
+       scanned; opting in per component meant half of them forgot. */
+    font-variant-numeric: lining-nums tabular-nums;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Display type is set tight and solid — see the note on the scale above. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  /* Stop a paragraph ending on a single orphaned word. */
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Money columns must align on the decimal — §14, non-negotiable. */
+  table,
+  [data-numeric] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  .font-numeric {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* §14: nothing on the till screen is below 16px. Manager and HQ may use 13–15px
+   in dense tables; the till may not. Rather than trust every author to remember
+   that, the till subtree raises the floor on the two tokens that fall below it,
+   so a shared component is automatically legible when it renders on a till.
+   Applied via `data-surface="till"` on the till layout. */
+[data-surface="till"] {
+  --text-body: 16px;
+  --text-label: 16px;
+  --text-label--line-height: 1.3;
+  --text-label--letter-spacing: 0.05em;
+  --text-mono: 16px;
+  --text-mono--line-height: 1.45;
+}
+
+/* The till's sidebar is a pinned 76px rail at every width, so the drawer
+   trigger has nothing to open. Hidden here rather than passed as a prop, so
+   no till screen has to remember to opt out. */
+[data-surface="till"] [data-mobile-nav] {
+  display: none;
+}
+
+/* §14 Motion — prefers-reduced-motion disables transitions but keeps the
+   scan-confirmation colour flash, which carries real information. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Thermal receipt — SPEC §12.
+
+   Sized for a 58mm roll (about 32 monospace characters at 9pt), which is the
+   narrower of the two rolls Swiftgrocers runs, so the same layout is safe on
+   80mm. Every rule below exists because of how a thermal head works, not
+   because of how it looks on a monitor:
+
+   - No colour, no grey, no fills. The head burns black or it does not; a tint
+     prints as dither or as nothing at all.
+   - Monospace, and columns measured in `ch`, so the character grid on screen
+     is the character grid on paper.
+   - `@page` margin is zero. Roll paper has no margin, and a page margin shifts
+     every column right and truncates the amounts.
+--------------------------------------------------------------------------- */
+
+.receipt {
+  --receipt-width: 32ch;
+
+  width: var(--receipt-width);
+  margin-inline: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.45;
+  color: #000;
+  background: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.receipt p {
+  margin: 0;
+}
+
+.receipt-center {
+  text-align: center;
+}
+
+/* The mark, at about 12mm on paper. Centred as a block because an inline image
+   sits on the text baseline and leaves a descender gap under it. */
+.receipt-mark {
+  display: block;
+  width: 12mm;
+  height: auto;
+  margin: 0 auto 1mm;
+}
+
+/* The only emphasis a thermal head renders reliably. */
+.receipt-shout {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.receipt-rule {
+  overflow: hidden;
+  white-space: nowrap;
+  letter-spacing: 0;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1ch;
+}
+
+.receipt-amount {
+  white-space: nowrap;
+}
+
+/* A label never wraps — a broken label reads as a printer fault, not as text.
+   Long values wrap under themselves instead. */
+.receipt-row > span:first-child {
+  white-space: nowrap;
+}
+
+.receipt-item {
+  overflow-wrap: anywhere;
+}
+
+.receipt-lines li + li {
+  margin-top: 0.35em;
+}
+
+.receipt-meta,
+.receipt-totals {
+  margin-block: 0.4em;
+}
+
+.receipt-code {
+  margin-top: 0.6em;
+  letter-spacing: 0.05em;
+}
+
+/* Blank roll so the cutter, which sits above the head, does not take the text. */
+.receipt-feed {
+  height: 14mm;
+}
+
+@media print {
+  @page {
+    size: 58mm auto;
+    margin: 0;
+  }
+
+  /* Print the receipt and nothing else. The screen it was opened from is not
+     part of the document — without this the printer feeds the whole till. */
+  body * {
+    visibility: hidden;
+  }
+
+  [data-receipt],
+  [data-receipt] * {
+    visibility: visible;
+  }
+
+  [data-receipt] {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: 58mm;
+    padding-inline: 2mm;
+  }
+
+  /* Thermal output is 1-bit: force it rather than letting the browser dither
+     a "nearly black" into grey. `print-color-adjust: exact` stops browsers
+     lightening the mark to save ink, which on a thermal head means it simply
+     does not print. */
+  .receipt {
+    font-size: 9pt;
+    color: #000 !important;
+    background: #fff !important;
+  }
+
+  .receipt-mark {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

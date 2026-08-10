@@ -1,0 +1,1237 @@
+// Swiftgrocers — the one database.
+//
+// This schema is shared, verbatim, by two applications:
+//
+//   SwiftGrocers_POS   the till, branch manager and HQ workspaces (this repo)
+//   swiftgrocers-main  the online store
+//
+// It is owned here. The storefront symlinks this file and never runs
+// `prisma migrate` — one owner, forward-only, so the two apps cannot drift
+// into two shapes of the same table. See docs/DATABASE.md.
+//
+// Four rules from CLAUDE.md are enforced by the database itself, not by
+// convention, and every one of them shows up in the column types below:
+//
+//   Rule 2  Money is never a float. Every amount is `BigInt` — an integer
+//           count of KOBO. `Int` would cap a total at ₦21,474,836.47, which a
+//           branch passes in a good week, so money is int8 throughout.
+//           Quantities are `Int` milli-units (thousandths), per SPEC §9.4.
+//   Rule 3  Stock is an append-only ledger. There is no `quantity` column on
+//           any product or branch row to update. Same for loyalty points.
+//   Rule 4  Nothing is hard-deleted. Soft-delete columns plus `audit_log`.
+//   Rule 1  The currency is the naira. There is no currency column anywhere,
+//           and adding one is a design error, not a feature.
+//
+// Isolation (SPEC §8) is Postgres RLS, applied in prisma/sql/001_roles_and_rls.sql.
+// Prisma connects as a non-superuser app role and every query runs inside a
+// transaction that sets `app.*` session variables — see src/lib/db/session.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/* ── Enumerations ─────────────────────────────────────────────────────────── */
+// Mirrors src/types/enums.ts exactly. When one changes the other changes.
+
+enum BranchStatus {
+  provisioning
+  active
+  suspended
+  closed
+
+  @@map("branch_status")
+}
+
+enum StaffRole {
+  general_admin
+  branch_manager
+  sales_person
+
+  @@map("staff_role")
+}
+
+enum StaffStatus {
+  invited
+  active
+  suspended
+  offboarded
+
+  @@map("staff_status")
+}
+
+enum ShiftStatus {
+  open
+  closed
+  force_closed
+
+  @@map("shift_status")
+}
+
+enum SoldBy {
+  unit
+  weight
+
+  @@map("sold_by")
+}
+
+enum StockReason {
+  BRANCH_OPENED
+  SALE
+  REFUND
+  VOID
+  PURCHASE_RECEIPT
+  TRANSFER_OUT
+  TRANSFER_IN
+  COUNT_ADJUSTMENT
+  DAMAGE
+  EXPIRY
+  THEFT
+  SAMPLE
+  CORRECTION
+  ONLINE_ORDER
+  ONLINE_RETURN
+
+  @@map("stock_reason")
+}
+
+enum SaleStatus {
+  draft
+  completed
+  voided
+  refunded
+  partially_refunded
+
+  @@map("sale_status")
+}
+
+enum PaymentMethod {
+  cash
+  card
+  transfer
+  pos_terminal
+  loyalty_points
+  split
+  credit
+
+  @@map("payment_method")
+}
+
+enum LoyaltyReason {
+  EARN
+  REDEEM
+  REVERSAL
+  EXPIRY
+  MANUAL_ADJUST
+  SIGNUP_BONUS
+  BIRTHDAY_BONUS
+  PROMOTION
+
+  @@map("loyalty_reason")
+}
+
+enum LoyaltyTier {
+  bronze
+  silver
+  gold
+
+  @@map("loyalty_tier")
+}
+
+enum PoStatus {
+  draft
+  sent
+  partially_received
+  received
+  cancelled
+
+  @@map("po_status")
+}
+
+enum TransferStatus {
+  requested
+  approved
+  in_transit
+  received
+  rejected
+  cancelled
+
+  @@map("transfer_status")
+}
+
+enum CountStatus {
+  open
+  counting
+  review
+  posted
+  abandoned
+
+  @@map("count_status")
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  denied
+  expired
+
+  @@map("approval_status")
+}
+
+enum ApprovalAction {
+  PRICE_OVERRIDE
+  VOID_SALE
+  REFUND
+  POST_COUNT
+  OVERSELL
+  POINTS_ADJUST
+
+  @@map("approval_action")
+}
+
+/// Where a sale came from. The till and the storefront write into the same
+/// stock ledger, so a movement must say which mouth ate the stock.
+enum SalesChannel {
+  till
+  online
+
+  @@map("sales_channel")
+}
+
+/// An online order's life. `awaiting_branch` exists because an order is paid
+/// for before a branch has accepted it — see OrderEvent for the trail.
+enum OrderStatus {
+  cart
+  awaiting_payment
+  awaiting_branch
+  accepted
+  picking
+  ready
+  out_for_delivery
+  delivered
+  collected
+  cancelled
+  refunded
+
+  @@map("order_status")
+}
+
+enum PaymentStatus {
+  pending
+  authorized
+  paid
+  failed
+  refunded
+
+  @@map("payment_status")
+}
+
+/// How the customer gets their groceries. Collection still reserves stock at a
+/// branch; it just never enters a van.
+enum FulfilmentMethod {
+  delivery
+  collection
+
+  @@map("fulfilment_method")
+}
+
+/// A reservation's life. Stock that is `held` is subtracted from what the till
+/// may sell, without ever being written to the ledger — nothing has physically
+/// moved yet. Only `committed` produces a ledger movement.
+enum ReservationState {
+  held
+  committed
+  released
+  expired
+
+  @@map("reservation_state")
+}
+
+/* ── Tenancy and structure ────────────────────────────────────────────────── */
+
+model Org {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  branches Branch[]
+  staff    Staff[]
+
+  @@map("org")
+}
+
+/// A shop. Also the unit of row-level security: a branch manager's session sees
+/// this row's children and no other branch's, and `tests/isolation/` fails the
+/// build over a single leaked row (SPEC §8).
+///
+/// The geography columns are what route an online order. A shopper's browser
+/// gives a latitude and longitude (or they pick a branch by hand); the nearest
+/// active branch that delivers and stocks the basket takes the order and
+/// delivers it. See app.nearest_branches() in prisma/sql/003_nearest_branch.sql.
+model Branch {
+  id     String @id @default(uuid()) @db.Uuid
+  orgId  String @map("org_id") @db.Uuid
+  /// Appears in receipt numbers, e.g. the GWA in SG-GWA-20260728-0042 (SPEC §12).
+  code   String @unique
+  name   String
+  city   String
+  state  String
+  address String
+  phone  String
+
+  status   BranchStatus @default(provisioning)
+  /// Ordering everywhere a branch list appears — flagship first, not alphabetical.
+  position Int          @default(0)
+
+  /// Decimal degrees, WGS84. Null until HQ pins the shop on the map, which is
+  /// also why `deliversOnline` defaults to false — a branch with no coordinates
+  /// can never be "nearest" to anybody.
+  latitude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+  /// How far this shop is willing to drive, in metres. Outside it, the next
+  /// branch out takes the order.
+  serviceRadiusM Int  @default(10000) @map("service_radius_m")
+  deliversOnline Boolean @default(false) @map("delivers_online")
+  offersCollection Boolean @default(true) @map("offers_collection")
+  /// Flat delivery fee for this branch, in kobo. Distance-banded pricing, if it
+  /// ever arrives, is a table of its own and not a float multiplier on this.
+  deliveryFeeKobo BigInt @default(0) @map("delivery_fee_kobo")
+
+  openingFloatKobo  BigInt @default(0) @map("opening_float_kobo")
+  lowStockThreshold Int    @default(10) @map("low_stock_threshold")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  /// Rule 4. A closed branch keeps every sale it ever rang.
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  org Org @relation(fields: [orgId], references: [id])
+
+  staff            Staff[]
+  devices          Device[]
+  stockLedger      StockLedger[]
+  reservations     StockReservation[]
+  shifts           Shift[]
+  sales            Sale[]
+  orders           Order[]
+  carts            Cart[]
+  customers        Customer[]
+  approvals        Approval[]
+  stockCounts      StockCount[]
+  transfersOut     Transfer[]         @relation("TransferFrom")
+  transfersIn      Transfer[]         @relation("TransferTo")
+  purchaseOrders   PurchaseOrder[]
+  loyaltyLedger    LoyaltyLedger[]
+  auditLog         AuditLog[]
+
+  @@index([orgId, status])
+  @@index([deliversOnline, status])
+  @@map("branch")
+}
+
+/// A registered till — SPEC §7.2. `clockSkewMinutes` past 5 raises a health
+/// alert, because an offline till with a wrong clock writes sales that sort
+/// into yesterday's takings.
+model Device {
+  id         String @id @default(uuid()) @db.Uuid
+  branchId   String @map("branch_id") @db.Uuid
+  label      String
+  deviceCode String @unique @map("device_code")
+
+  appVersion       String   @default("") @map("app_version")
+  lastSeenAt       DateTime? @map("last_seen_at") @db.Timestamptz(6)
+  clockSkewMinutes Int      @default(0) @map("clock_skew_minutes")
+  queuedWrites     Int      @default(0) @map("queued_writes")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  branch Branch  @relation(fields: [branchId], references: [id])
+  shifts Shift[]
+
+  @@index([branchId])
+  @@map("device")
+}
+
+/* ── People ───────────────────────────────────────────────────────────────── */
+
+/// Staff — SPEC §7.2.
+///
+/// `branchId` is null only for a general_admin; the constraint that enforces
+/// that lives in prisma/sql/001_roles_and_rls.sql as
+/// `branch_required_for_non_admin`, because Prisma cannot express a CHECK
+/// across two columns.
+///
+/// Identity is Neon Auth (Stack Auth). `stackUserId` points at the row Stack
+/// syncs into `neon_auth.users_sync`; it is a plain column rather than a
+/// foreign key because that schema is managed outside these migrations.
+/// The till PIN is ours, not Stack's — it is a fast local re-auth for a
+/// cashier already standing at an authenticated till, never a primary
+/// credential, and it is stored only as a hash.
+model Staff {
+  id          String  @id @default(uuid()) @db.Uuid
+  orgId       String  @map("org_id") @db.Uuid
+  branchId    String? @map("branch_id") @db.Uuid
+  stackUserId String? @unique @map("stack_user_id")
+
+  fullName String @map("full_name")
+  email    String @unique
+  phone    String?
+  /// Printed on receipts, e.g. ABJ03-C07 (SPEC §12).
+  staffCode String @unique @map("staff_code")
+
+  role   StaffRole
+  status StaffStatus @default(invited)
+
+  /**
+   * Two credentials, because a shop has two situations.
+   *
+   * `passwordHash` is the real one — email and password, typed at a keyboard,
+   * how a manager or an admin signs in. `pinHash` is four digits for a cashier
+   * standing at a till with a queue, which is only acceptable *because* it is
+   * limited to that: a PIN unlocks the till workspace on a registered device
+   * and nothing else, and it is rate-limited by the two columns below.
+   *
+   * Both are scrypt, salted per row. Neither ever leaves the database in
+   * readable form — a reset issues a new secret and shows it once.
+   */
+  passwordHash String?   @map("password_hash")
+  /** Set when a manager issues a temporary one, cleared once they change it. */
+  mustChangePassword Boolean @default(false) @map("must_change_password")
+
+  pinHash     String?   @map("pin_hash")
+  pinSetAt    DateTime? @map("pin_set_at") @db.Timestamptz(6)
+  /// Consecutive bad PINs. Cleared on success; past the threshold the account
+  /// locks and a manager has to clear it.
+  pinAttempts Int       @default(0) @map("pin_attempts")
+  lockedUntil DateTime? @map("locked_until") @db.Timestamptz(6)
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  org    Org     @relation(fields: [orgId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
+
+  shifts        Shift[]
+  sales         Sale[]
+  stockLedger   StockLedger[]
+  approvalsMade Approval[]     @relation("ApprovalDecidedBy")
+  approvalsAsked Approval[]    @relation("ApprovalRequestedBy")
+  auditLog      AuditLog[]
+  orderEvents   OrderEvent[]
+
+  @@index([branchId, role, status])
+  @@map("staff")
+}
+
+/// A customer — and this is the row where the two applications meet.
+///
+/// The same person is a loyalty member at the till and an account on the
+/// storefront. There is exactly one of them, keyed by phone number: the card
+/// *is* the phone number (SPEC §11), and a shopper who signs up online walks
+/// into Gwarinpa a week later and their points are already there.
+///
+/// `stackUserId` is null for someone enrolled at the till who has never used
+/// the website. That is the normal case, not a defect — they are still a
+/// customer, they simply have no login.
+model Customer {
+  id          String  @id @default(uuid()) @db.Uuid
+  stackUserId String? @unique @map("stack_user_id")
+
+  fullName String  @map("full_name")
+  /// E.164, and the natural key across both applications. Masked everywhere
+  /// except the customer detail view (SPEC §17).
+  phone    String  @unique
+  email    String? @unique
+
+  homeBranchId String? @map("home_branch_id") @db.Uuid
+  tier         LoyaltyTier @default(bronze)
+
+  enrolledAt DateTime  @default(now()) @map("enrolled_at") @db.Timestamptz(6)
+  lastVisitAt DateTime? @map("last_visit_at") @db.Timestamptz(6)
+
+  /// Marketing consent is per channel and recorded, not assumed.
+  acceptsEmail Boolean @default(false) @map("accepts_email")
+  acceptsSms   Boolean @default(false) @map("accepts_sms")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  homeBranch Branch? @relation(fields: [homeBranchId], references: [id])
+
+  addresses     CustomerAddress[]
+  carts         Cart[]
+  orders        Order[]
+  sales         Sale[]
+  loyaltyLedger LoyaltyLedger[]
+
+  @@index([homeBranchId])
+  @@map("customer")
+}
+
+/// A delivery address. Carries its own coordinates because the branch that
+/// serves an order is chosen from the *address*, not from wherever the shopper
+/// happened to be holding their phone when they checked out.
+model CustomerAddress {
+  id         String @id @default(uuid()) @db.Uuid
+  customerId String @map("customer_id") @db.Uuid
+
+  label   String  @default("Home")
+  street  String
+  city    String
+  state   String
+  landmark String?
+  phone   String
+
+  latitude  Decimal? @db.Decimal(9, 6)
+  longitude Decimal? @db.Decimal(9, 6)
+
+  isDefault Boolean @default(false) @map("is_default")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  orders   Order[]
+
+  @@index([customerId])
+  @@map("customer_address")
+}
+
+/* ── Catalog ──────────────────────────────────────────────────────────────── */
+// Global, not branch-scoped. HQ owns it; branches hold stock of it but never
+// edit it (SPEC §7.3). Both applications read these two tables, which is the
+// whole point of the exercise: one product, one price, one barcode list.
+
+model Category {
+  id   String @id @default(uuid()) @db.Uuid
+  /// The storefront's URL segment, e.g. `fruits-vegetables`.
+  slug String @unique
+  name String
+  /// Ordering on the till's product grid — most-sold first, not alphabetical.
+  position Int @default(0)
+  /// Category artwork for the storefront rails. The till draws its own.
+  imageUrl String? @map("image_url")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamptz(6)
+
+  products Product[]
+
+  @@map("category")
+}
+
+/// A product in the master catalog — SPEC §7.3.
+///
+/// Priced centrally: a branch override would be a separate row against the
+/// branch, never a mutation of this one. The `online*` columns decide whether
+/// the storefront lists it; the till sells everything that is not delisted,
+/// because a customer standing at the counter holding a tin can buy it whether
+/// or not it photographs well.
+model Product {
+  id   String @id @default(uuid()) @db.Uuid
+  /// Human-facing code on the shelf label, e.g. SG-0417.
+  sku  String @unique
+  /// The storefront's URL key, e.g. `seedless-prunes`. Stable and human
+  /// readable, so a link printed in a leaflet still resolves next year.
+  slug String @unique
+
+  name        String
+  brand       String?
+  description String  @default("")
+  categoryId  String  @map("category_id") @db.Uuid
+
+  /// Unit price, VAT inclusive (SPEC §9.2), in kobo.
+  priceKobo BigInt @map("price_kobo")
+  /// The struck-through "was" price on the storefront. Null when not on offer.
+  /// It is a price, not a percentage: storing a discount percent and deriving
+  /// the price is how a float creeps back into money.
+  compareAtPriceKobo BigInt? @map("compare_at_price_kobo")
+  /// What the shop paid, for margin figures. Never shown to a cashier.
+  costKobo  BigInt @map("cost_kobo")
+
+  soldBy SoldBy @default(unit) @map("sold_by")
+  /// `ea`, `kg`, `L` — what the *quantity* counts. The till does arithmetic
+  /// with this.
+  unit   String @default("ea")
+  /// What is written on the packet — "1.1 kg pack", "6 × 50cl". Display only,
+  /// and deliberately separate from `unit`: the storefront shows it, and
+  /// nothing ever multiplies by it.
+  packSize String? @map("pack_size")
+  /// Below this, the branch is told to reorder (SPEC §10.4). Milli-units.
+  reorderLevelMilli Int @default(0) @map("reorder_level_milli")
+
+  imageUrl String? @map("image_url")
+
+  /// Storefront listing. A product can be perfectly sellable in a shop and
+  /// still have no business being on the website — cigarettes, loose ice.
+  onlineListed Boolean @default(false) @map("online_listed")
+  tags         String[] @default([])
+  /// Denormalised from reviews for sorting. Recomputed by a job, never typed in.
+  ratingAvg    Decimal @default(0) @map("rating_avg") @db.Decimal(3, 2)
+  ratingCount  Int     @default(0) @map("rating_count")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  /// Rule 4: soft delete only. Delisted products still have history.
+  delistedAt DateTime? @map("delisted_at") @db.Timestamptz(6)
+
+  category Category @relation(fields: [categoryId], references: [id])
+
+  barcodes      ProductBarcode[]
+  images        ProductImage[]
+  stockLedger   StockLedger[]
+  reservations  StockReservation[]
+  saleLines     SaleLine[]
+  orderLines    OrderLine[]
+  cartLines     CartLine[]
+  countLines    StockCountLine[]
+  transferLines TransferLine[]
+  poLines       PurchaseOrderLine[]
+
+  @@index([categoryId, delistedAt])
+  @@index([onlineListed, delistedAt])
+  @@map("product")
+}
+
+/// One product, many codes. A grocery line routinely carries several: the
+/// manufacturer's EAN-13, the case GTIN, and the in-store QR the branch prints
+/// for loose goods. Hence a table and not a column.
+model ProductBarcode {
+  id        String  @id @default(uuid()) @db.Uuid
+  productId String  @map("product_id") @db.Uuid
+  barcode   String  @unique
+  /// The one printed on the shelf label, when the product has several.
+  isPrimary Boolean @default(false) @map("is_primary")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("product_barcode")
+}
+
+model ProductImage {
+  id        String @id @default(uuid()) @db.Uuid
+  productId String @map("product_id") @db.Uuid
+  url       String
+  alt       String @default("")
+  position  Int    @default(0)
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId, position])
+  @@map("product_image")
+}
+
+/* ── Stock ────────────────────────────────────────────────────────────────── */
+
+/// The stock ledger — SPEC §10. Append-only (rule 3).
+///
+/// There is no on-hand column anywhere in this schema. A balance is
+/// `SUM(delta_milli)` over this table for a branch and product, and the only
+/// way to change one is to append another movement. To correct a mistake you
+/// append its opposite with reason CORRECTION, which leaves both the error and
+/// the fix on the record.
+///
+/// UPDATE and DELETE are rejected by a trigger *and* revoked from the app role
+/// in prisma/sql/002_append_only.sql. Two locks, because this is the table the
+/// entire inventory rests on.
+model StockLedger {
+  id        String @id @default(uuid()) @db.Uuid
+  branchId  String @map("branch_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+
+  /// Signed milli-units. Positive puts stock in, negative takes it out.
+  deltaMilli Int         @map("delta_milli")
+  reason     StockReason
+  channel    SalesChannel?
+
+  at DateTime @default(now()) @db.Timestamptz(6)
+
+  /// Who caused it. A sale records the cashier, a receipt the manager. The name
+  /// is copied, not joined: a staff member who leaves must not blank out the
+  /// history of every movement they ever made.
+  staffId   String? @map("staff_id") @db.Uuid
+  staffName String  @map("staff_name")
+
+  /// The sale, order, transfer or purchase order this movement belongs to.
+  ref  String?
+  note String?
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  staff   Staff?  @relation(fields: [staffId], references: [id])
+
+  /// The index every balance query in the system rides on.
+  @@index([branchId, productId, at])
+  @@index([branchId, at])
+  @@index([ref])
+  @@map("stock_ledger")
+}
+
+/// Stock claimed by an online order that has not yet been picked.
+///
+/// This table is the reason the till and the storefront can share one stock
+/// figure without fighting over it. When a shopper pays, the crate is `held` —
+/// nothing has physically moved, so nothing is written to the ledger, but the
+/// till's *available* figure drops and a cashier cannot sell it out from under
+/// the order. When the picker actually lifts it off the shelf the reservation
+/// is `committed` and the ledger movement is written then.
+///
+/// Available to sell = SUM(ledger.delta_milli) − SUM(held reservations).
+/// See app.available_stock() in prisma/sql/003_nearest_branch.sql.
+model StockReservation {
+  id        String @id @default(uuid()) @db.Uuid
+  branchId  String @map("branch_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+  orderId   String @map("order_id") @db.Uuid
+
+  qtyMilli Int              @map("qty_milli")
+  state    ReservationState @default(held)
+
+  /// A hold that nobody picks must not strand stock forever. A sweeper expires
+  /// these; the branch gets the crate back.
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  resolvedAt  DateTime? @map("resolved_at") @db.Timestamptz(6)
+
+  branch  Branch  @relation(fields: [branchId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  order   Order   @relation(fields: [orderId], references: [id])
+
+  @@index([branchId, productId, state])
+  @@index([orderId])
+  @@index([state, expiresAt])
+  @@map("stock_reservation")
+}
+
+/* ── The till ─────────────────────────────────────────────────────────────── */
+
+/// A cashier's session at a till — SPEC §11.4.
+model Shift {
+  id       String  @id @default(uuid()) @db.Uuid
+  branchId String  @map("branch_id") @db.Uuid
+  staffId  String  @map("staff_id") @db.Uuid
+  deviceId String? @map("device_id") @db.Uuid
+
+  tillLabel        String   @map("till_label")
+  openedAt         DateTime @default(now()) @map("opened_at") @db.Timestamptz(6)
+  openingFloatKobo BigInt   @map("opening_float_kobo")
+
+  closedAt        DateTime? @map("closed_at") @db.Timestamptz(6)
+  /// What the cashier counted at close. Null until they do. The variance
+  /// against expected cash is derived, never stored — it would go stale the
+  /// moment a late sale synced in.
+  countedCashKobo BigInt?   @map("counted_cash_kobo")
+
+  status ShiftStatus @default(open)
+
+  branch Branch  @relation(fields: [branchId], references: [id])
+  staff  Staff   @relation(fields: [staffId], references: [id])
+  device Device? @relation(fields: [deviceId], references: [id])
+
+  sales Sale[]
+
+  @@index([branchId, status])
+  @@index([staffId, openedAt])
+  @@map("shift")
+}
+
+/// A completed sale — SPEC §11.
+///
+/// Written once at the till and never edited: a mistake is reversed with a
+/// refund or a void, both of which are their own records (rule 4). A trigger
+/// in prisma/sql/002_append_only.sql rejects any UPDATE that touches a column
+/// other than `syncedAt` — an offline till has to be able to mark a sale
+/// delivered, and that is the only thing it may change afterwards.
+///
+/// `clientId` is what makes an offline till safe (rule 8). The till mints it
+/// locally and it is unique here, so a queued sale that gets retried three
+/// times over a flaky connection still lands exactly once.
+model Sale {
+  id       String @id @default(uuid()) @db.Uuid
+  /// Minted on the device, unique here. The idempotency key for sync.
+  clientId String @unique @map("client_id")
+  /// Printed on the receipt, e.g. SG-GWA-20260728-0042 (SPEC §12).
+  receiptNo String @unique @map("receipt_no")
+
+  branchId String  @map("branch_id") @db.Uuid
+  staffId  String  @map("staff_id") @db.Uuid
+  shiftId  String? @map("shift_id") @db.Uuid
+  /// Set when the customer gave their phone number at the counter. Null is the
+  /// overwhelmingly common case and is not a problem.
+  customerId String? @map("customer_id") @db.Uuid
+
+  /// Copied, not joined — a receipt must still read correctly in five years
+  /// when the cashier has left and the branch has been renamed.
+  branchName String @map("branch_name")
+  staffName  String @map("staff_name")
+  staffCode  String @map("staff_code")
+
+  subtotalKobo BigInt @map("subtotal_kobo")
+  discountKobo BigInt @default(0) @map("discount_kobo")
+  totalKobo    BigInt @map("total_kobo")
+  changeKobo   BigInt @default(0) @map("change_kobo")
+  /// Cash rounded to the nearest ₦5 is a branch setting (SPEC §9.3) and is
+  /// recorded here as its own adjustment rather than folded into the total.
+  roundingKobo BigInt @default(0) @map("rounding_kobo")
+
+  /// What this sale did to the customer's card — SPEC §11.
+  ///
+  /// Both are copies of what the loyalty ledger records, kept on the sale so a
+  /// receipt can be reprinted from one row and so "you earned 124 points" is
+  /// still true a year later even if the earn rate has changed since. The
+  /// ledger remains the balance; these two are the receipt's memory of it.
+  pointsEarned   Int @default(0) @map("points_earned")
+  pointsRedeemed Int @default(0) @map("points_redeemed")
+
+  status  SaleStatus   @default(completed)
+  channel SalesChannel @default(till)
+
+  at DateTime @default(now()) @db.Timestamptz(6)
+
+  /// Not an error flag. Offline is a normal way for this shop to trade (rule 8);
+  /// this exists so a manager can tell a genuine oversell from a sync artefact.
+  takenOffline Boolean   @default(false) @map("taken_offline")
+  syncedAt     DateTime? @map("synced_at") @db.Timestamptz(6)
+
+  branch   Branch    @relation(fields: [branchId], references: [id])
+  staff    Staff     @relation(fields: [staffId], references: [id])
+  shift    Shift?    @relation(fields: [shiftId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  lines   SaleLine[]
+  tenders Tender[]
+
+  @@index([branchId, at])
+  @@index([shiftId])
+  @@index([customerId])
+  @@map("sale")
+}
+
+/// Prices are copied onto the line, never referenced. A price change tomorrow
+/// must not silently restate what a customer paid today.
+model SaleLine {
+  id     String @id @default(uuid()) @db.Uuid
+  saleId String @map("sale_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+
+  name String
+  sku  String
+
+  qtyMilli Int    @map("qty_milli")
+  /// Carried on the line, not looked up later. Without it a receipt cannot
+  /// count itself: one pack of spaghetti plus 5kg of beans is not "6 items".
+  soldBy   SoldBy @map("sold_by")
+  unit     String
+
+  unitPriceKobo BigInt @map("unit_price_kobo")
+  discountKobo  BigInt @default(0) @map("discount_kobo")
+  /// The rounded line total, stored so the receipt and the report agree
+  /// forever. Rounding is half-up per line, then summed — never recompute a
+  /// total from the raw inputs (rule 2, SPEC §9.3).
+  lineTotalKobo BigInt @map("line_total_kobo")
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_line")
+}
+
+model Tender {
+  id         String        @id @default(uuid()) @db.Uuid
+  saleId     String        @map("sale_id") @db.Uuid
+  method     PaymentMethod
+  amountKobo BigInt        @map("amount_kobo")
+  reference  String?
+
+  sale Sale @relation(fields: [saleId], references: [id])
+
+  @@index([saleId])
+  @@map("tender")
+}
+
+/* ── The storefront ───────────────────────────────────────────────────────── */
+
+/// A shopper's basket, held server-side so it survives a change of device.
+/// `branchId` is a hint, resolved from where they are: it decides which prices
+/// and which availability they see while browsing, and it is re-resolved at
+/// checkout against the delivery address.
+model Cart {
+  id         String  @id @default(uuid()) @db.Uuid
+  customerId String? @map("customer_id") @db.Uuid
+  /// For a shopper who has not signed in yet. Merged into their customer cart
+  /// when they do.
+  anonymousId String? @map("anonymous_id")
+  branchId   String? @map("branch_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  branch   Branch?   @relation(fields: [branchId], references: [id])
+
+  lines CartLine[]
+
+  @@unique([customerId])
+  @@unique([anonymousId])
+  @@map("cart")
+}
+
+model CartLine {
+  id        String @id @default(uuid()) @db.Uuid
+  cartId    String @map("cart_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+  qtyMilli  Int    @map("qty_milli")
+
+  addedAt DateTime @default(now()) @map("added_at") @db.Timestamptz(6)
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([cartId, productId])
+  @@map("cart_line")
+}
+
+/// An online order — and the other half of the shared database.
+///
+/// An order is *fulfilled by a branch*. The branch is chosen from the delivery
+/// address at checkout: nearest active branch that delivers, is within its
+/// service radius, and can actually cover the basket. The shopper may override
+/// it by hand. From that moment the order behaves like any other draw on that
+/// branch's stock — it reserves it, then moves it on the same ledger the till
+/// writes to, which is what stops the shop selling the same crate twice.
+///
+/// Unlike a Sale this row *is* mutable: status advances. Every advance is
+/// written to OrderEvent, which is append-only, so the trail is intact even
+/// though the row is not.
+model Order {
+  id      String @id @default(uuid()) @db.Uuid
+  /// e.g. SG-ONL-20260809-0042. Shown to the customer.
+  orderNo String @unique @map("order_no")
+
+  customerId String @map("customer_id") @db.Uuid
+  /// The fulfilling branch, assigned by the router at checkout — so it is set
+  /// from the moment an order exists as an order. It stays null only while the
+  /// row is still a `cart` or `awaiting_payment`, which is also why row-level
+  /// security can key a branch's staff off this column: an `awaiting_branch`
+  /// order is one that has been *given* to a branch and is waiting for that
+  /// branch to accept it, not one that belongs to nobody.
+  branchId   String? @map("branch_id") @db.Uuid
+  addressId  String? @map("address_id") @db.Uuid
+
+  status        OrderStatus      @default(cart)
+  paymentStatus PaymentStatus    @default(pending) @map("payment_status")
+  fulfilment    FulfilmentMethod @default(delivery)
+
+  subtotalKobo    BigInt @map("subtotal_kobo")
+  discountKobo    BigInt @default(0) @map("discount_kobo")
+  deliveryFeeKobo BigInt @default(0) @map("delivery_fee_kobo")
+  totalKobo       BigInt @map("total_kobo")
+
+  paymentMethod PaymentMethod?  @map("payment_method")
+  paymentRef    String?         @map("payment_ref")
+
+  /// The address as it was at checkout. Copied for the same reason line prices
+  /// are: the customer moving house next year must not rewrite where this
+  /// order went.
+  deliverToStreet String? @map("deliver_to_street")
+  deliverToCity   String? @map("deliver_to_city")
+  deliverToState  String? @map("deliver_to_state")
+  deliverToPhone  String? @map("deliver_to_phone")
+  deliverToLatitude  Decimal? @map("deliver_to_latitude") @db.Decimal(9, 6)
+  deliverToLongitude Decimal? @map("deliver_to_longitude") @db.Decimal(9, 6)
+  /// Metres from the fulfilling branch, recorded at assignment. Kept so a
+  /// manager can see why this branch was picked long after the fact.
+  distanceM Int? @map("distance_m")
+  /// True when the shopper overrode the automatic choice. Worth knowing before
+  /// anyone tunes the routing.
+  branchChosenByCustomer Boolean @default(false) @map("branch_chosen_by_customer")
+
+  notes String?
+
+  placedAt    DateTime? @map("placed_at") @db.Timestamptz(6)
+  acceptedAt  DateTime? @map("accepted_at") @db.Timestamptz(6)
+  readyAt     DateTime? @map("ready_at") @db.Timestamptz(6)
+  deliveredAt DateTime? @map("delivered_at") @db.Timestamptz(6)
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz(6)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer Customer         @relation(fields: [customerId], references: [id])
+  branch   Branch?          @relation(fields: [branchId], references: [id])
+  address  CustomerAddress? @relation(fields: [addressId], references: [id])
+
+  lines        OrderLine[]
+  events       OrderEvent[]
+  reservations StockReservation[]
+
+  @@index([customerId, createdAt])
+  @@index([branchId, status])
+  @@index([status, placedAt])
+  @@map("order")
+}
+
+model OrderLine {
+  id        String @id @default(uuid()) @db.Uuid
+  orderId   String @map("order_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+
+  name String
+  sku  String
+
+  qtyMilli Int    @map("qty_milli")
+  soldBy   SoldBy @map("sold_by")
+  unit     String
+
+  unitPriceKobo BigInt @map("unit_price_kobo")
+  discountKobo  BigInt @default(0) @map("discount_kobo")
+  lineTotalKobo BigInt @map("line_total_kobo")
+
+  /// What the picker actually found. Groceries substitute and run short; the
+  /// ordered quantity and the picked quantity are different facts and both
+  /// matter, so both are stored.
+  pickedQtyMilli Int? @map("picked_qty_milli")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+  @@map("order_line")
+}
+
+/// Append-only. The "perfect order" the customer was promised is only auditable
+/// if every hand-off is on the record — who accepted it, who picked it, who
+/// drove it, and when.
+model OrderEvent {
+  id      String @id @default(uuid()) @db.Uuid
+  orderId String @map("order_id") @db.Uuid
+
+  status OrderStatus
+  note   String?
+
+  /// Null when the actor was the customer or a scheduled job rather than staff.
+  staffId   String? @map("staff_id") @db.Uuid
+  actorName String  @map("actor_name")
+
+  at DateTime @default(now()) @db.Timestamptz(6)
+
+  order Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  staff Staff? @relation(fields: [staffId], references: [id])
+
+  @@index([orderId, at])
+  @@map("order_event")
+}
+
+/* ── Loyalty ──────────────────────────────────────────────────────────────── */
+
+/// Append-only, exactly like stock (rule 3). A balance is the sum of the
+/// movements. Earned at the till, earned online, spent either place — one
+/// ledger, so the two applications can never disagree about what somebody has.
+model LoyaltyLedger {
+  id         String @id @default(uuid()) @db.Uuid
+  customerId String @map("customer_id") @db.Uuid
+  branchId   String? @map("branch_id") @db.Uuid
+
+  deltaPoints Int           @map("delta_points")
+  reason      LoyaltyReason
+  /// The sale or order that caused it.
+  ref         String?
+  note        String?
+
+  at DateTime @default(now()) @db.Timestamptz(6)
+
+  customer Customer @relation(fields: [customerId], references: [id])
+  branch   Branch?  @relation(fields: [branchId], references: [id])
+
+  @@index([customerId, at])
+  @@index([ref])
+  @@map("loyalty_ledger")
+}
+
+/* ── Operations ───────────────────────────────────────────────────────────── */
+
+/// Something a cashier may ask for but a manager must clear — SPEC §3.
+model Approval {
+  id       String @id @default(uuid()) @db.Uuid
+  branchId String @map("branch_id") @db.Uuid
+
+  action  ApprovalAction
+  /// What is being asked for, in the cashier's words.
+  summary String
+  detail  String         @default("")
+  amountKobo BigInt?     @map("amount_kobo")
+
+  status ApprovalStatus @default(pending)
+
+  requestedById String   @map("requested_by_id") @db.Uuid
+  requestedAt   DateTime @default(now()) @map("requested_at") @db.Timestamptz(6)
+  decidedById   String?  @map("decided_by_id") @db.Uuid
+  decidedAt     DateTime? @map("decided_at") @db.Timestamptz(6)
+  decisionNote  String?  @map("decision_note")
+
+  branch      Branch @relation(fields: [branchId], references: [id])
+  requestedBy Staff  @relation("ApprovalRequestedBy", fields: [requestedById], references: [id])
+  decidedBy   Staff? @relation("ApprovalDecidedBy", fields: [decidedById], references: [id])
+
+  @@index([branchId, status, requestedAt])
+  @@map("approval")
+}
+
+/// A stock count — SPEC §9.6. Posting one appends COUNT_ADJUSTMENT movements
+/// to the ledger; it never writes a balance.
+model StockCount {
+  id        String @id @default(uuid()) @db.Uuid
+  branchId  String @map("branch_id") @db.Uuid
+  reference String @unique
+
+  scope      String
+  scopeLabel String      @map("scope_label")
+  status     CountStatus @default(open)
+
+  startedById String   @map("started_by_id") @db.Uuid
+  startedAt   DateTime @default(now()) @map("started_at") @db.Timestamptz(6)
+  postedAt    DateTime? @map("posted_at") @db.Timestamptz(6)
+
+  branch Branch           @relation(fields: [branchId], references: [id])
+  lines  StockCountLine[]
+
+  @@index([branchId, status])
+  @@map("stock_count")
+}
+
+model StockCountLine {
+  id      String @id @default(uuid()) @db.Uuid
+  countId String @map("count_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+
+  /// The ledger balance at the moment the sheet was cut.
+  expectedMilli Int  @map("expected_milli")
+  /// Null until somebody counts it.
+  countedMilli  Int? @map("counted_milli")
+  countedAt     DateTime? @map("counted_at") @db.Timestamptz(6)
+
+  count   StockCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+  product Product    @relation(fields: [productId], references: [id])
+
+  @@unique([countId, productId])
+  @@map("stock_count_line")
+}
+
+/// An inter-branch movement — SPEC §7.7. Two ledger entries, never one:
+/// TRANSFER_OUT at the sending branch and TRANSFER_IN at the receiving one,
+/// so stock in a van belongs to neither shelf and both books balance.
+model Transfer {
+  id        String @id @default(uuid()) @db.Uuid
+  reference String @unique
+
+  fromBranchId String @map("from_branch_id") @db.Uuid
+  toBranchId   String @map("to_branch_id") @db.Uuid
+
+  status TransferStatus @default(requested)
+
+  requestedById String   @map("requested_by_id") @db.Uuid
+  requestedAt   DateTime @default(now()) @map("requested_at") @db.Timestamptz(6)
+  approvedAt    DateTime? @map("approved_at") @db.Timestamptz(6)
+  receivedAt    DateTime? @map("received_at") @db.Timestamptz(6)
+
+  fromBranch Branch         @relation("TransferFrom", fields: [fromBranchId], references: [id])
+  toBranch   Branch         @relation("TransferTo", fields: [toBranchId], references: [id])
+  lines      TransferLine[]
+
+  @@index([fromBranchId, status])
+  @@index([toBranchId, status])
+  @@map("transfer")
+}
+
+model TransferLine {
+  id         String @id @default(uuid()) @db.Uuid
+  transferId String @map("transfer_id") @db.Uuid
+  productId  String @map("product_id") @db.Uuid
+
+  qtyMilli         Int  @map("qty_milli")
+  receivedQtyMilli Int? @map("received_qty_milli")
+
+  transfer Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@unique([transferId, productId])
+  @@map("transfer_line")
+}
+
+model PurchaseOrder {
+  id        String @id @default(uuid()) @db.Uuid
+  branchId  String @map("branch_id") @db.Uuid
+  reference String @unique
+
+  supplier   String
+  status     PoStatus @default(draft)
+  totalKobo  BigInt   @default(0) @map("total_kobo")
+  expectedOn DateTime? @map("expected_on") @db.Date
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  branch Branch              @relation(fields: [branchId], references: [id])
+  lines  PurchaseOrderLine[]
+
+  @@index([branchId, status])
+  @@map("purchase_order")
+}
+
+model PurchaseOrderLine {
+  id        String @id @default(uuid()) @db.Uuid
+  poId      String @map("po_id") @db.Uuid
+  productId String @map("product_id") @db.Uuid
+
+  qtyMilli         Int    @map("qty_milli")
+  receivedQtyMilli Int    @default(0) @map("received_qty_milli")
+  unitCostKobo     BigInt @map("unit_cost_kobo")
+
+  po      PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
+  product Product       @relation(fields: [productId], references: [id])
+
+  @@unique([poId, productId])
+  @@map("purchase_order_line")
+}
+
+/// The immutable record of every privileged action — SPEC §7.8, rule 4.
+/// Append-only, enforced by trigger and by revoked grants.
+model AuditLog {
+  id       String  @id @default(uuid()) @db.Uuid
+  branchId String? @map("branch_id") @db.Uuid
+
+  action String
+  entity String
+  entityId String? @map("entity_id")
+
+  actorId   String? @map("actor_id") @db.Uuid
+  actorName String  @map("actor_name")
+  actorRole String  @map("actor_role")
+
+  detail String   @default("")
+  /// Before/after, when the action changed something worth reconstructing.
+  payload Json?
+
+  occurredAt DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  branch Branch? @relation(fields: [branchId], references: [id])
+  actor  Staff?  @relation(fields: [actorId], references: [id])
+
+  @@index([branchId, occurredAt])
+  @@index([entity, entityId])
+  @@map("audit_log")
+}

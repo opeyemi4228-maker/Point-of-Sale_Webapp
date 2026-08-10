@@ -1,0 +1,10 @@
+{
+  "//": "For code run by plain `tsx` — the seed and the integration tests. It differs from the app config in exactly one way: `server-only` resolves to a stub, because that package throws outside Next's server graph. See scripts/support/server-only-stub.ts.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "server-only": ["./scripts/support/server-only-stub.ts"]
+    }
+  }
+}

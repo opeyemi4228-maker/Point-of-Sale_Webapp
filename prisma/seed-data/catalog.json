@@ -1,0 +1,814 @@
+{
+  "categories": [
+    {
+      "slug": "fruits-vegetables",
+      "name": "Fruits & Vegetables",
+      "position": 1,
+      "imageUrl": "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "bakery",
+      "name": "Bakery",
+      "position": 2,
+      "imageUrl": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "dairy-eggs",
+      "name": "Dairy & Eggs",
+      "position": 3,
+      "imageUrl": "https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "meat-seafood",
+      "name": "Meat & Seafood",
+      "position": 4,
+      "imageUrl": "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "grains-pasta",
+      "name": "Grains & Pasta",
+      "position": 5,
+      "imageUrl": "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "pantry",
+      "name": "Pantry & Cooking",
+      "position": 6,
+      "imageUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "beverages",
+      "name": "Beverages",
+      "position": 7,
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "snacks",
+      "name": "Snacks & Treats",
+      "position": 8,
+      "imageUrl": "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "household",
+      "name": "Household",
+      "position": 9,
+      "imageUrl": "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "baby",
+      "name": "Baby & Kids",
+      "position": 10,
+      "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "health",
+      "name": "Health & Wellness",
+      "position": 11,
+      "imageUrl": "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&q=70&w=600"
+    },
+    {
+      "slug": "personal-care",
+      "name": "Personal Care",
+      "position": 12,
+      "imageUrl": "https://images.unsplash.com/photo-1596040033229-a0b13f34e43a?auto=format&fit=crop&q=70&w=600"
+    }
+  ],
+  "products": [
+    {
+      "sku": "SG-0001",
+      "slug": "seedless-prunes",
+      "name": "Seedless Prunes",
+      "brand": "Mighty Square",
+      "description": "Naturally sweet, sun-dried prunes with the stone removed. High in fibre and ready to eat straight from the pack.",
+      "categorySlug": "fruits-vegetables",
+      "priceKobo": 320000,
+      "compareAtPriceKobo": 400000,
+      "costKobo": 230400,
+      "unit": "ea",
+      "packSize": "1.1 kg pack",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1490818387583-1baba5e638af?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1490818387583-1baba5e638af?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1490818387583-1baba5e638af?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "organic",
+        "vegan",
+        "gluten-free"
+      ],
+      "ratingAvg": 4.9,
+      "ratingCount": 127,
+      "barcode": "6151000000000",
+      "openingStock": 45
+    },
+    {
+      "sku": "SG-0002",
+      "slug": "fresh-tomatoes",
+      "name": "Fresh Ripe Tomatoes",
+      "brand": "Green Valley",
+      "description": "Vine-ripened tomatoes picked the morning they ship. Firm skins, deep flavour, perfect for stews and sauces.",
+      "categorySlug": "fruits-vegetables",
+      "priceKobo": 180000,
+      "compareAtPriceKobo": 240000,
+      "costKobo": 129600,
+      "unit": "ea",
+      "packSize": "1.5 kg",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1546094096-0df4bcaaa337?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "fresh",
+        "vegan"
+      ],
+      "ratingAvg": 4.6,
+      "ratingCount": 214,
+      "barcode": "6151000007919",
+      "openingStock": 120
+    },
+    {
+      "sku": "SG-0003",
+      "slug": "baby-spinach",
+      "name": "Organic Baby Spinach",
+      "brand": "Leaf & Co",
+      "description": "Tender baby spinach leaves, triple-washed and ready for salads, smoothies or a quick sauté.",
+      "categorySlug": "fruits-vegetables",
+      "priceKobo": 150000,
+      "compareAtPriceKobo": null,
+      "costKobo": 108000,
+      "unit": "ea",
+      "packSize": "200 g",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "organic",
+        "vegan",
+        "salad"
+      ],
+      "ratingAvg": 4.7,
+      "ratingCount": 88,
+      "barcode": "6151000015838",
+      "openingStock": 60
+    },
+    {
+      "sku": "SG-0004",
+      "slug": "fresh-apples",
+      "name": "Fresh Royal Gala Apples",
+      "brand": "Orchard Best",
+      "description": "Crisp, sweet Royal Gala apples with a firm bite. Hand-graded and packed to keep for two weeks.",
+      "categorySlug": "fruits-vegetables",
+      "priceKobo": 250000,
+      "compareAtPriceKobo": 300000,
+      "costKobo": 180000,
+      "unit": "ea",
+      "packSize": "1 kg",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "fresh",
+        "vegan",
+        "snack"
+      ],
+      "ratingAvg": 4.5,
+      "ratingCount": 141,
+      "barcode": "6151000023757",
+      "openingStock": 90
+    },
+    {
+      "sku": "SG-0005",
+      "slug": "mixed-vegetable-box",
+      "name": "Weekly Vegetable Box",
+      "brand": "SwiftGrocers",
+      "description": "A rotating box of the week's best seasonal vegetables, chosen by our buyers each Monday morning.",
+      "categorySlug": "fruits-vegetables",
+      "priceKobo": 650000,
+      "compareAtPriceKobo": 820000,
+      "costKobo": 468000,
+      "unit": "ea",
+      "packSize": "8–10 items",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "organic",
+        "bundle",
+        "vegan"
+      ],
+      "ratingAvg": 4.8,
+      "ratingCount": 302,
+      "barcode": "6151000031676",
+      "openingStock": 25
+    },
+    {
+      "sku": "SG-0006",
+      "slug": "wholegrain-bread",
+      "name": "Wholegrain Sourdough Loaf",
+      "brand": "Daily Loaf",
+      "description": "Slow-fermented for 18 hours, baked at dawn and delivered the same day. Chewy crumb, dark crust.",
+      "categorySlug": "bakery",
+      "priceKobo": 160000,
+      "compareAtPriceKobo": null,
+      "costKobo": 115200,
+      "unit": "ea",
+      "packSize": "600 g",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "bakery",
+        "wholegrain"
+      ],
+      "ratingAvg": 4.7,
+      "ratingCount": 96,
+      "barcode": "6151000039595",
+      "openingStock": 40
+    },
+    {
+      "sku": "SG-0007",
+      "slug": "butter-croissants",
+      "name": "All-Butter Croissants",
+      "brand": "Daily Loaf",
+      "description": "Laminated with French butter over three days. Shatteringly crisp outside, honeycomb inside.",
+      "categorySlug": "bakery",
+      "priceKobo": 280000,
+      "compareAtPriceKobo": 340000,
+      "costKobo": 201600,
+      "unit": "ea",
+      "packSize": "Pack of 4",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "bakery",
+        "breakfast"
+      ],
+      "ratingAvg": 4.8,
+      "ratingCount": 74,
+      "barcode": "6151000047514",
+      "openingStock": 30
+    },
+    {
+      "sku": "SG-0008",
+      "slug": "uht-milk",
+      "name": "UHT Full Cream Milk",
+      "brand": "PureDairy",
+      "description": "Long-life full cream milk that keeps unopened in the pantry for six months.",
+      "categorySlug": "dairy-eggs",
+      "priceKobo": 140000,
+      "compareAtPriceKobo": 170000,
+      "costKobo": 100800,
+      "unit": "ea",
+      "packSize": "1 L",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1563636619-e9143da7973b?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "dairy",
+        "long-life"
+      ],
+      "ratingAvg": 4.4,
+      "ratingCount": 188,
+      "barcode": "6151000055433",
+      "openingStock": 200
+    },
+    {
+      "sku": "SG-0009",
+      "slug": "greek-yogurt",
+      "name": "Greek Yogurt, Plain",
+      "brand": "YumGreek",
+      "description": "Strained twice for a thick set and 10 g of protein per serving. No added sugar.",
+      "categorySlug": "dairy-eggs",
+      "priceKobo": 210000,
+      "compareAtPriceKobo": null,
+      "costKobo": 151200,
+      "unit": "ea",
+      "packSize": "400 g",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "dairy",
+        "high-protein"
+      ],
+      "ratingAvg": 4.6,
+      "ratingCount": 63,
+      "barcode": "6151000063352",
+      "openingStock": 48
+    },
+    {
+      "sku": "SG-0010",
+      "slug": "free-range-eggs",
+      "name": "Free-Range Eggs",
+      "brand": "Homestead",
+      "description": "Eggs from hens with daily pasture access. Deep orange yolks, collected every morning.",
+      "categorySlug": "dairy-eggs",
+      "priceKobo": 360000,
+      "compareAtPriceKobo": 420000,
+      "costKobo": 259200,
+      "unit": "ea",
+      "packSize": "Crate of 30",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "organic",
+        "protein"
+      ],
+      "ratingAvg": 4.7,
+      "ratingCount": 256,
+      "barcode": "6151000071271",
+      "openingStock": 70
+    },
+    {
+      "sku": "SG-0011",
+      "slug": "frozen-chicken",
+      "name": "Whole Frozen Chicken",
+      "brand": "ColdChain",
+      "description": "Farm-raised whole chicken, blast-frozen within two hours of processing and shipped in a cold box.",
+      "categorySlug": "meat-seafood",
+      "priceKobo": 890000,
+      "compareAtPriceKobo": 1050000,
+      "costKobo": 640800,
+      "unit": "ea",
+      "packSize": "1.6 kg",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "frozen",
+        "protein"
+      ],
+      "ratingAvg": 4.3,
+      "ratingCount": 119,
+      "barcode": "6151000079190",
+      "openingStock": 35
+    },
+    {
+      "sku": "SG-0012",
+      "slug": "atlantic-salmon",
+      "name": "Atlantic Salmon Fillet",
+      "brand": "Blue Harbour",
+      "description": "Skin-on salmon fillets, pin-boned and portioned. Delivered chilled, never frozen.",
+      "categorySlug": "meat-seafood",
+      "priceKobo": 1250000,
+      "compareAtPriceKobo": null,
+      "costKobo": 900000,
+      "unit": "ea",
+      "packSize": "2 × 180 g",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "seafood",
+        "omega-3"
+      ],
+      "ratingAvg": 4.9,
+      "ratingCount": 41,
+      "barcode": "6151000087109",
+      "openingStock": 12
+    },
+    {
+      "sku": "SG-0013",
+      "slug": "brown-rice",
+      "name": "Brown Rice",
+      "brand": "FarmField",
+      "description": "Unpolished long-grain brown rice with the bran intact. Nuttier and higher in fibre than white.",
+      "categorySlug": "grains-pasta",
+      "priceKobo": 980000,
+      "compareAtPriceKobo": 1150000,
+      "costKobo": 705600,
+      "unit": "ea",
+      "packSize": "5 kg",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "organic",
+        "wholegrain",
+        "vegan"
+      ],
+      "ratingAvg": 4.5,
+      "ratingCount": 173,
+      "barcode": "6151000095028",
+      "openingStock": 80
+    },
+    {
+      "sku": "SG-0014",
+      "slug": "instant-noodles",
+      "name": "Instant Noodles Multipack",
+      "brand": "Dufil",
+      "description": "The two-minute classic. Five packs with seasoning and chilli oil sachets included.",
+      "categorySlug": "grains-pasta",
+      "priceKobo": 260000,
+      "compareAtPriceKobo": 300000,
+      "costKobo": 187200,
+      "unit": "ea",
+      "packSize": "Pack of 5",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "pantry",
+        "quick"
+      ],
+      "ratingAvg": 4.2,
+      "ratingCount": 421,
+      "barcode": "6151000102947",
+      "openingStock": 300
+    },
+    {
+      "sku": "SG-0015",
+      "slug": "olive-oil",
+      "name": "Extra Virgin Olive Oil",
+      "brand": "Casa Verde",
+      "description": "First cold pressing, 0.3% acidity, bottled in dark glass to protect it from light.",
+      "categorySlug": "pantry",
+      "priceKobo": 840000,
+      "compareAtPriceKobo": 990000,
+      "costKobo": 604800,
+      "unit": "ea",
+      "packSize": "750 ml",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "organic",
+        "cold-pressed",
+        "vegan"
+      ],
+      "ratingAvg": 4.8,
+      "ratingCount": 92,
+      "barcode": "6151000110866",
+      "openingStock": 55
+    },
+    {
+      "sku": "SG-0016",
+      "slug": "pure-honey",
+      "name": "Raw Pure Honey",
+      "brand": "Golden Nectar",
+      "description": "Unheated and unfiltered, so it keeps its pollen and enzymes. Crystallises naturally in cool weather.",
+      "categorySlug": "pantry",
+      "priceKobo": 450000,
+      "compareAtPriceKobo": 540000,
+      "costKobo": 324000,
+      "unit": "ea",
+      "packSize": "500 g",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "organic",
+        "raw",
+        "unfiltered"
+      ],
+      "ratingAvg": 4.9,
+      "ratingCount": 208,
+      "barcode": "6151000118785",
+      "openingStock": 65
+    },
+    {
+      "sku": "SG-0017",
+      "slug": "peanut-butter",
+      "name": "Crunchy Peanut Butter",
+      "brand": "NutriSpread",
+      "description": "Roasted groundnuts and a pinch of salt. Nothing else — no palm oil, no added sugar.",
+      "categorySlug": "pantry",
+      "priceKobo": 310000,
+      "compareAtPriceKobo": null,
+      "costKobo": 223200,
+      "unit": "ea",
+      "packSize": "400 g",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1501012243893-2a24a76c0e5b?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1501012243893-2a24a76c0e5b?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1501012243893-2a24a76c0e5b?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "pantry",
+        "protein",
+        "vegan"
+      ],
+      "ratingAvg": 4.4,
+      "ratingCount": 77,
+      "barcode": "6151000126704",
+      "openingStock": 90
+    },
+    {
+      "sku": "SG-0018",
+      "slug": "tomato-paste",
+      "name": "Double Concentrated Tomato Paste",
+      "brand": "RedGold",
+      "description": "Reduced twice for a deep, savoury base. One tin replaces roughly a kilo of fresh tomatoes.",
+      "categorySlug": "pantry",
+      "priceKobo": 90000,
+      "compareAtPriceKobo": 120000,
+      "costKobo": 64800,
+      "unit": "ea",
+      "packSize": "400 g",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1592924357229-45f7ab4b0e5e?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1592924357229-45f7ab4b0e5e?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1592924357229-45f7ab4b0e5e?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "pantry",
+        "vegan"
+      ],
+      "ratingAvg": 4.1,
+      "ratingCount": 310,
+      "barcode": "6151000134623",
+      "openingStock": 260
+    },
+    {
+      "sku": "SG-0019",
+      "slug": "sparkling-water",
+      "name": "Sparkling Water",
+      "brand": "AquaFiz",
+      "description": "Lightly carbonated mineral water in a recyclable bottle. No sweeteners, no flavourings.",
+      "categorySlug": "beverages",
+      "priceKobo": 120000,
+      "compareAtPriceKobo": null,
+      "costKobo": 86400,
+      "unit": "ea",
+      "packSize": "1.5 L",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "drinks",
+        "sugar-free"
+      ],
+      "ratingAvg": 4.3,
+      "ratingCount": 58,
+      "barcode": "6151000142542",
+      "openingStock": 180
+    },
+    {
+      "sku": "SG-0020",
+      "slug": "herbal-tea",
+      "name": "Assorted Herbal Tea",
+      "brand": "HerbAroma",
+      "description": "Four caffeine-free infusions — hibiscus, ginger, lemongrass and mint — in compostable bags.",
+      "categorySlug": "beverages",
+      "priceKobo": 240000,
+      "compareAtPriceKobo": 290000,
+      "costKobo": 172800,
+      "unit": "ea",
+      "packSize": "20 teabags",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "organic",
+        "caffeine-free"
+      ],
+      "ratingAvg": 4.5,
+      "ratingCount": 40,
+      "barcode": "6151000150461",
+      "openingStock": 130
+    },
+    {
+      "sku": "SG-0021",
+      "slug": "chocolate-bars",
+      "name": "Dark Chocolate Bars",
+      "brand": "Sweet Treats",
+      "description": "70% single-origin cocoa from Ondo, conched for 48 hours. Snappy, bitter, not too sweet.",
+      "categorySlug": "snacks",
+      "priceKobo": 380000,
+      "compareAtPriceKobo": 460000,
+      "costKobo": 273600,
+      "unit": "ea",
+      "packSize": "Pack of 6",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1511381939415-e44015466834?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "snack",
+        "cocoa"
+      ],
+      "ratingAvg": 4.6,
+      "ratingCount": 134,
+      "barcode": "6151000158380",
+      "openingStock": 75
+    },
+    {
+      "sku": "SG-0022",
+      "slug": "breakfast-cereal",
+      "name": "Wholegrain Breakfast Cereal",
+      "brand": "MorningFuel",
+      "description": "Toasted wholegrain flakes with 6 g of fibre a bowl and no added colours.",
+      "categorySlug": "snacks",
+      "priceKobo": 290000,
+      "compareAtPriceKobo": null,
+      "costKobo": 208800,
+      "unit": "ea",
+      "packSize": "500 g",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "breakfast",
+        "fibre"
+      ],
+      "ratingAvg": 4.2,
+      "ratingCount": 66,
+      "barcode": "6151000166299",
+      "openingStock": 110
+    },
+    {
+      "sku": "SG-0023",
+      "slug": "laundry-detergent",
+      "name": "Concentrated Laundry Detergent",
+      "brand": "PureWash",
+      "description": "Triple-concentrated formula — one capful per load. Works from 30°C, rinses clean.",
+      "categorySlug": "household",
+      "priceKobo": 560000,
+      "compareAtPriceKobo": 680000,
+      "costKobo": 403200,
+      "unit": "ea",
+      "packSize": "2 L, 40 washes",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "household",
+        "concentrate"
+      ],
+      "ratingAvg": 4.4,
+      "ratingCount": 87,
+      "barcode": "6151000174218",
+      "openingStock": 60
+    },
+    {
+      "sku": "SG-0024",
+      "slug": "baby-diapers",
+      "name": "Baby Diapers, Size M",
+      "brand": "GentleBaby",
+      "description": "Twelve-hour absorbency with a breathable cotton-soft back sheet. Fragrance and lotion free.",
+      "categorySlug": "baby",
+      "priceKobo": 740000,
+      "compareAtPriceKobo": 890000,
+      "costKobo": 532800,
+      "unit": "ea",
+      "packSize": "30 pieces",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "baby",
+        "hypoallergenic"
+      ],
+      "ratingAvg": 4.7,
+      "ratingCount": 245,
+      "barcode": "6151000182137",
+      "openingStock": 85
+    },
+    {
+      "sku": "SG-0025",
+      "slug": "multivitamins",
+      "name": "Daily Multivitamin Tablets",
+      "brand": "Healthline",
+      "description": "A month of A–Z coverage in one tablet, including vitamin D and iron. NAFDAC registered.",
+      "categorySlug": "health",
+      "priceKobo": 420000,
+      "compareAtPriceKobo": null,
+      "costKobo": 302400,
+      "unit": "ea",
+      "packSize": "30 tablets",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1550572017-edd951aa8f72?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "wellness",
+        "supplement"
+      ],
+      "ratingAvg": 4.3,
+      "ratingCount": 51,
+      "barcode": "6151000190056",
+      "openingStock": 95
+    },
+    {
+      "sku": "SG-0026",
+      "slug": "whitening-toothpaste",
+      "name": "Whitening Toothpaste",
+      "brand": "BrightCare",
+      "description": "Gentle micro-polishing paste with 1450 ppm fluoride. Lifts stains without abrading enamel.",
+      "categorySlug": "personal-care",
+      "priceKobo": 190000,
+      "compareAtPriceKobo": 230000,
+      "costKobo": 136800,
+      "unit": "ea",
+      "packSize": "100 ml",
+      "reorderLevelMilli": 10000,
+      "imageUrl": "https://images.unsplash.com/photo-1596040033229-a0b13f34e43a?auto=format&fit=crop&q=70&w=900",
+      "images": [
+        "https://images.unsplash.com/photo-1596040033229-a0b13f34e43a?auto=format&fit=crop&q=70&w=900",
+        "https://images.unsplash.com/photo-1596040033229-a0b13f34e43a?auto=format&fit=crop&q=70&w=1400"
+      ],
+      "onlineListed": true,
+      "tags": [
+        "personal-care",
+        "fluoride"
+      ],
+      "ratingAvg": 4.2,
+      "ratingCount": 112,
+      "barcode": "6151000197975",
+      "openingStock": 140
+    }
+  ]
+}

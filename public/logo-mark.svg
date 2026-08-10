@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Swiftgrocers">
+  <!--
+    The Swiftgrocers mark, reduced from public/logo.png: the green tote with its
+    looped handle, two grommets, and produce cresting the rim.
+
+    The full logo carries a basket of tomatoes, lettuce and a leek. At 20px that
+    detail collapses into a smudge, so the icon keeps only what survives — the
+    silhouette, the handle loop, and two rounds breaking the rim line. They sit
+    high enough that roughly half of each shows above the bag, which is what
+    makes the shape read as full rather than as a plain rectangle.
+
+    Draw order is produce, then handle, then bag: the handle legs cross in front
+    of the fruit and the bag laps over the bottom of it, exactly as in the logo.
+
+    Brand asset, so the two logo values are literal here rather than tokens: an
+    SVG loaded through an img element cannot read a CSS custom property. Keep
+    them in step with the leaf and zest colours in src/app/globals.css.
+
+    (No double hyphens in this comment. An .svg is served as XML and parsed
+    strictly, so one turns the whole file into a broken image.)
+  -->
+
+  <!-- Produce. Three tones of the one hue plus the orange, so the handle, the
+       greens and the bag stay separate shapes instead of merging into a lump. -->
+  <circle cx="11.9" cy="11.6" r="3.1" fill="#4E7818"/>
+  <circle cx="19.6" cy="10.6" r="3.9" fill="#FF5D0D"/>
+
+  <!-- Handle: a loop rising clear of the produce, in the lightest green. -->
+  <path d="M10.5 12.8V7.4a5.5 5.5 0 0 1 11 0v5.4" fill="none" stroke="#8CC63F"
+        stroke-width="1.9" stroke-linecap="round"/>
+
+  <!-- Bag body, laid over the bottom of the produce and the handle legs. -->
+  <path d="M4.6 12.4h22.8v11.4A5.2 5.2 0 0 1 22.2 29H9.8a5.2 5.2 0 0 1-5.2-5.2Z" fill="#69A320"/>
+
+  <!-- Grommets the handle threads through. -->
+  <g fill="#F2F8EA">
+    <circle cx="10.5" cy="15.6" r="1.15"/>
+    <circle cx="21.5" cy="15.6" r="1.15"/>
+  </g>
+</svg>
