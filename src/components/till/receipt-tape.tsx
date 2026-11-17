@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { lineTotal, type BasketLine, type BasketTotals } from "@/lib/domain/basket";
 import { format } from "@/lib/domain/money";
@@ -17,20 +18,40 @@ import { cn } from "@/lib/utils/cn";
  * Money is tabular here and only here it matters most — a column of totals that
  * does not align on the decimal cannot be scanned, and that is the column a
  * customer disputes.
+ *
+ * The line the last scan or tap changed is scrolled into view and marked. On a
+ * long basket the tape is taller than its column, and a scan that merged into
+ * a line forty rows up was otherwise invisible — the cashier saw nothing move
+ * and scanned the tin again.
  */
 export function ReceiptTape({
   lines,
   totals,
+  touchedLineId,
   onIncrement,
   onDecrement,
   onRemove,
 }: {
   lines: readonly BasketLine[];
   totals: BasketTotals;
+  touchedLineId: string | null;
   onIncrement: (lineId: string) => void;
   onDecrement: (lineId: string) => void;
   onRemove: (lineId: string) => void;
 }) {
+  const listRef = useRef<HTMLOListElement>(null);
+  // Re-run on quantity as well as id: a second scan of the same tin touches
+  // the same line, and it must still come back into view.
+  const touched = lines.find((line) => line.id === touchedLineId);
+  const touchedQuantity = touched?.quantity.milli;
+
+  useEffect(() => {
+    if (!touchedLineId) return;
+    listRef.current
+      ?.querySelector(`[data-line="${touchedLineId}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [touchedLineId, touchedQuantity]);
+
   if (lines.length === 0) {
     return (
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
@@ -43,9 +64,19 @@ export function ReceiptTape({
   }
 
   return (
-    <ol className="min-h-0 flex-1 overflow-y-auto">
+    <ol ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
       {lines.map((line) => (
-        <li key={line.id} className="border-b border-line px-4 py-3.5">
+        <li
+          key={line.id}
+          data-line={line.id}
+          aria-current={line.id === touchedLineId ? "true" : undefined}
+          className={cn(
+            "border-b border-l-4 border-b-line px-4 py-3.5 transition-colors duration-150 ease-out-pos",
+            line.id === touchedLineId
+              ? "border-l-market bg-market-tint"
+              : "border-l-transparent",
+          )}
+        >
           <div className="flex items-start justify-between gap-3">
             <p className="min-w-0 flex-1 font-medium text-ink">{line.product.name}</p>
             <p className="font-numeric shrink-0 font-semibold text-ink tabular-nums">

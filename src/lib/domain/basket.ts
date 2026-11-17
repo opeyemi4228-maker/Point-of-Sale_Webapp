@@ -200,3 +200,49 @@ export function quickTenders(total: Money): Money[] {
 /** Sum of what has been tendered so far, across a split payment. */
 export const tenderedSoFar = (tenders: readonly { amount: Money }[]): Money =>
   tenders.reduce((total, tender) => add(total, tender.amount), ZERO);
+
+/**
+ * What is still owed after the tenders taken so far — SPEC §11 split payment.
+ *
+ * Never below zero: once the bill is covered the remainder is nothing, and the
+ * excess (cash only) is change, which `changeDue` reports separately. A
+ * negative "still to pay" would read on screen as money owed to the customer.
+ */
+export function remainingDue(total: Money, tenders: readonly { amount: Money }[]): Money {
+  const left = subtract(total, tenderedSoFar(tenders));
+  return left.kobo > 0 ? left : ZERO;
+}
+
+/**
+ * Naira notes in everyday circulation, largest first. Coins below ₦5 have all
+ * but left the till, so change is counted out in these and nothing smaller.
+ */
+export const NAIRA_NOTES: readonly number[] = [1_000, 500, 200, 100, 50, 20, 10, 5];
+
+export type ChangeBreakdown = {
+  notes: { naira: number; count: number }[];
+  /** What the notes cannot make — under ₦5, plus any kobo. */
+  remainder: Money;
+};
+
+/**
+ * Change counted out the way a cashier hands it over: fewest notes, largest
+ * first. Read off the screen while the hand is in the drawer, it turns "₦3,650"
+ * into "three ₦1,000, one ₦500, one ₦100, one ₦50" — the arithmetic done by
+ * the till rather than by a cashier with a queue watching.
+ */
+export function changeBreakdown(change: Money): ChangeBreakdown {
+  let left = Math.max(change.kobo, 0);
+  const notes: ChangeBreakdown["notes"] = [];
+
+  for (const note of NAIRA_NOTES) {
+    const value = note * 100;
+    const count = Math.floor(left / value);
+    if (count > 0) {
+      notes.push({ naira: note, count });
+      left -= count * value;
+    }
+  }
+
+  return { notes, remainder: { kobo: left } };
+}

@@ -101,3 +101,26 @@ export function searchProducts(
 /** Live products only. Delisted lines stay in history but leave the grid. */
 export const listed = (products: readonly Product[]): Product[] =>
   products.filter((product) => !product.delistedAt);
+
+/** At most this many of one product in a single keyed multiplier. */
+const MAX_MULTIPLIER = 999;
+
+/**
+ * A scan with an optional quantity in front: `6*5012345678900` is six tins.
+ *
+ * Six identical tins in a crate are one scan and a number, not six passes over
+ * the glass. The cashier types `6*` and then scans; the scanner's keystrokes
+ * land after the prefix and its Enter submits the lot.
+ *
+ * Only `*` separates. `x` would be friendlier to type, but alphanumeric in-store
+ * codes can contain one, and `3X…` silently becoming three of something else is
+ * the worst kind of mis-scan — a plausible one.
+ */
+export function parseScanEntry(raw: string): { code: string; multiplier: number } {
+  const match = /^\s*(\d{1,3})\s*\*\s*(\S.*)$/.exec(raw);
+  if (!match) return { code: raw, multiplier: 1 };
+
+  const multiplier = Number(match[1]);
+  if (multiplier < 1 || multiplier > MAX_MULTIPLIER) return { code: match[2], multiplier: 1 };
+  return { code: match[2], multiplier };
+}
