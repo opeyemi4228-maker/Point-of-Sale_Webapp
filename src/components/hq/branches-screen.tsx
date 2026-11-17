@@ -66,7 +66,8 @@ export function BranchesScreen() {
   const needAttention = rows.filter((r) => r.oversold > 0 || r.low > 0).length;
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto flex min-w-0 flex-col gap-5 p-5">
+    <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <div className="flex min-w-0 flex-col gap-5 p-5">
       <div className="grid min-w-0 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Panel>
           <StatTile label="Branches" value={String(rows.length)} hint="Trading today" />
@@ -149,6 +150,7 @@ export function BranchesScreen() {
           from the ledger.
         </p>
       </Panel>
+    </div>
     </main>
   );
 }

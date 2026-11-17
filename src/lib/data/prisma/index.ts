@@ -4,6 +4,7 @@ import { toStaff } from "./mappers";
 import {
   branchRepository,
   catalogRepository,
+  purchasingRepository,
   salesRepository,
   stockRepository,
 } from "./reads";
@@ -108,6 +109,7 @@ export function prismaRepositories(actor: Actor): Repositories {
     branches: branchRepository(actor),
     catalog: catalogRepository(actor),
     stock: stockRepository(actor),
+    purchasing: purchasingRepository(actor),
     sales: salesRepository(actor),
     shifts: shiftRepository(actor),
     staff: staffRepository(actor),

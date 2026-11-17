@@ -5,6 +5,7 @@ import type { Sale, Shift } from "@/types/sale";
 import type { Customer, CreateStaffResult, NewSalesPerson, StaffMember } from "@/types/people";
 import type { LoyaltyReason, LoyaltyTier } from "@/types/enums";
 import type { CashierOverview, HqOverview, ManagerOverview } from "@/types/dashboard";
+import type { PurchaseOrder } from "@/types/operations";
 
 /**
  * The contract every screen codes against. Implementations live in `mock/`
@@ -85,6 +86,15 @@ export type StockRepository = {
   availability(
     branchId: string,
   ): Promise<Map<string, { onHandMilli: number; heldMilli: number; availableMilli: number }>>;
+};
+
+/**
+ * Purchase orders — SPEC §7.7. Read-only here: what has arrived against an
+ * order is the stock ledger's business, not the order's.
+ */
+export type PurchasingRepository = {
+  /** Every order the actor may see, newest first. */
+  listOrders(): Promise<PurchaseOrder[]>;
 };
 
 export type SalesRepository = {
@@ -222,6 +232,7 @@ export type Repositories = {
   branches: BranchRepository;
   catalog: CatalogRepository;
   stock: StockRepository;
+  purchasing: PurchasingRepository;
   sales: SalesRepository;
   shifts: ShiftRepository;
   staff: StaffRepository;

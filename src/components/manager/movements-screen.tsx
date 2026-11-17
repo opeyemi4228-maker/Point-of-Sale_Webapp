@@ -2,15 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { ArrowDownLeft, ArrowUpRight, ScrollText } from "lucide-react";
+import { CatalogFilter, ScopeControls, matchesCatalog, useCatalogFilter } from "@/components/inventory/scope-controls";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ExportMenu } from "@/components/ui/export-menu";
 import { Panel, PanelHeader } from "@/components/ui/panel";
 import { TableScroller } from "@/components/ui/table-scroller";
 import { formatQty } from "@/lib/domain/quantity";
 import { STOCK_REASON_LABEL } from "@/lib/domain/stock";
 import { useBranchData } from "@/lib/hooks/use-branch-data";
+import { useDayRange } from "@/lib/hooks/use-inventory";
 import { useSessionStore } from "@/lib/stores/session";
 import { useWorkspaceProducts } from "@/lib/data/workspace-data";
 import { stamp, todayInLagos } from "@/lib/utils/format-date";
+import { qtyCell, reportFilename, type ReportSpec } from "@/lib/export/report";
 import type { StockReason } from "@/types/enums";
 import { cn } from "@/lib/utils/cn";
 
@@ -38,6 +42,9 @@ export function MovementsScreen() {
   const { entries } = useBranchData(staff?.branchId ?? null, todayInLagos());
   const [reason, setReason] = useState<StockReason | "all">("all");
   const products = useWorkspaceProducts();
+  const dates = useDayRange(todayInLagos(), "all");
+  const { range } = dates;
+  const [catalog, setCatalog] = useCatalogFilter();
 
   // Delisted lines are included deliberately: a movement recorded against a
   // product that has since left the catalog still has to render with its name
@@ -46,31 +53,104 @@ export function MovementsScreen() {
     () => new Map(products.map((p) => [p.id, p.name])),
     [products],
   );
+  const byId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
 
-  const rows = useMemo(
+  // Period and product first; the reason chips then count within that.
+  const inScope = useMemo(() => {
+    const from = Date.parse(range.instants.from);
+    const to = Date.parse(range.instants.to);
+    return entries.filter((e) => {
+      const t = Date.parse(e.at);
+      if (t < from || t >= to) return false;
+      const product = byId.get(e.productId);
+      return product ? matchesCatalog(product, catalog) : catalog.productId === "all" && catalog.categoryId === "all";
+    });
+  }, [entries, range.instants, byId, catalog]);
+
+  const filtered = useMemo(
     () =>
-      [...entries]
+      inScope
         .filter((e) => reason === "all" || e.reason === reason)
-        .sort((a, b) => b.at.localeCompare(a.at))
-        .slice(0, 250),
-    [entries, reason],
+        .sort((a, b) => b.at.localeCompare(a.at)),
+    [inScope, reason],
   );
+  // The screen shows the latest 250; the export carries every one.
+  const rows = useMemo(() => filtered.slice(0, 250), [filtered]);
+
+  const buildReport = (): ReportSpec => {
+    const today = todayInLagos();
+    return {
+      title: "Stock ledger",
+      subtitle: `${staff?.branchName ?? "Branch"} · every stock movement, newest first`,
+      filename: reportFilename("stock-ledger", staff?.branchName, reason === "all" ? null : reason, today),
+      orientation: "landscape",
+      meta: [
+        { label: "Branch", value: staff?.branchName ?? "—" },
+        { label: "Period", value: `${range.label} · ${range.fromDay} to ${range.toDay}` },
+        { label: "Movements", value: reason === "all" ? "All reasons" : STOCK_REASON_LABEL[reason] },
+        {
+          label: "Products",
+          value:
+            catalog.productId !== "all"
+              ? (byId.get(catalog.productId)?.name ?? "One product")
+              : catalog.categoryId !== "all"
+                ? (products.find((p) => p.categoryId === catalog.categoryId)?.categoryName ?? "One category")
+                : "All products",
+        },
+        { label: "Entries", value: String(filtered.length) },
+
+      ],
+      tables: [
+        {
+          columns: [
+            { header: "When", width: 14 },
+            { header: "Part no.", mono: true, width: 9 },
+            { header: "Product", width: 24 },
+            { header: "Movement", width: 14 },
+            { header: "Change", align: "right", width: 9 },
+            { header: "By", width: 13 },
+            { header: "Reference", mono: true, width: 17 },
+          ],
+          rows: filtered.map((e) => {
+            const product = byId.get(e.productId);
+            return [
+              stamp(e.at),
+              product?.sku ?? "—",
+              product?.name ?? e.productId,
+              STOCK_REASON_LABEL[e.reason],
+              qtyCell(e.delta, product?.unit, { signed: true, tone: e.delta.milli > 0 ? "market" : undefined }),
+              e.staffName,
+              e.ref ?? e.note ?? "—",
+            ];
+          }),
+          empty: "No movements recorded.",
+        },
+      ],
+      footnote:
+        "The ledger is append-only. A mistake is corrected by a new movement, so errors and their corrections both appear here.",
+    };
+  };
 
   // Only the reasons actually present — a filter offering ten options where
   // eight return nothing is a filter that wastes a click every time.
   const present = useMemo(() => {
-    const seen = new Set(entries.map((e) => e.reason));
+    const seen = new Set(inScope.map((e) => e.reason));
     return (Object.keys(STOCK_REASON_LABEL) as StockReason[]).filter((r) =>
       seen.has(r),
     );
-  }, [entries]);
+  }, [inScope]);
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto p-5">
+    <main className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto p-4 sm:p-5">
+      <ScopeControls allowAll={false} dates={dates}>
+        <CatalogFilter products={products} value={catalog} onChange={setCatalog} />
+      </ScopeControls>
+
       <Panel>
         <PanelHeader
           title="Stock movements"
-          meta={`${entries.length} recorded · newest first`}
+          meta={`${inScope.length} in this period${inScope.length !== entries.length ? ` of ${entries.length} recorded` : ""} · newest first`}
+          action={<ExportMenu build={buildReport} disabled={filtered.length === 0} />}
         />
 
         <div className="flex flex-wrap gap-2 border-b border-line p-4">
@@ -143,9 +223,9 @@ export function MovementsScreen() {
           </TableScroller>
         )}
 
-        {entries.length > rows.length && (
+        {filtered.length > rows.length && (
           <p className="border-t border-line px-5 py-3 text-label tracking-normal text-ink-40">
-            Showing the most recent {rows.length} of {entries.length}.
+            Showing the most recent {rows.length} of {filtered.length}. The export carries all of them.
           </p>
         )}
       </Panel>

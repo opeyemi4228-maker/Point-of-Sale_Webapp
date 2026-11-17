@@ -77,3 +77,69 @@ const stampFormat = new Intl.DateTimeFormat(LOCALE, {
   timeZone: TIMEZONE,
 });
 export const stamp = (iso: string) => safely(stampFormat, iso);
+
+/** `17 Nov` — chart axes and compact day columns. */
+const shortDateFormat = new Intl.DateTimeFormat(LOCALE, {
+  day: "numeric",
+  month: "short",
+  timeZone: TIMEZONE,
+});
+/** Takes an ISO day (`2026-11-17`) or an instant. */
+export const shortDate = (iso: string) =>
+  safely(shortDateFormat, iso.length === 10 ? `${iso}T12:00:00Z` : iso);
+
+/** `17 Nov 2026` — expiry dates, where the year matters. */
+const dayDateFormat = new Intl.DateTimeFormat(LOCALE, {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: TIMEZONE,
+});
+export const dayDate = (iso: string) =>
+  safely(dayDateFormat, iso.length === 10 ? `${iso}T12:00:00Z` : iso);
+
+/**
+ * The instants bounding a run of Lagos calendar days: from midnight at the
+ * start of `fromDay` to midnight at the end of `toDay`.
+ *
+ * Lagos is West Africa Time, UTC+1 all year with no daylight saving, so the
+ * offset is fixed rather than looked up.
+ */
+export function lagosDayRange(fromDay: string, toDay: string): { from: string; to: string } {
+  const start = new Date(`${fromDay}T00:00:00+01:00`);
+  const end = new Date(`${toDay}T00:00:00+01:00`);
+  end.setUTCDate(end.getUTCDate() + 1);
+  return { from: start.toISOString(), to: end.toISOString() };
+}
+
+/**
+ * "Today", "Yesterday", or `Tuesday, 11 August 2026` — the heading over a
+ * day's entries in a register. Days are Lagos days, compared as ISO dates.
+ */
+export function dayHeading(day: string, today: string): string {
+  if (day === today) return "Today";
+  const y = new Date(`${today}T12:00:00Z`);
+  y.setUTCDate(y.getUTCDate() - 1);
+  if (day === y.toISOString().slice(0, 10)) return "Yesterday";
+  return longDate(`${day}T12:00:00Z`);
+}
+
+/**
+ * `just now`, `25 min ago`, `3 h ago`, `yesterday`, `12 days ago` — how long
+ * since something happened, for the line under an exact time. `now` is passed
+ * in (see `useNow`) so this never reads a clock during render.
+ */
+export function relativeTime(iso: string, now: number): string {
+  const ms = now - Date.parse(iso);
+  if (!Number.isFinite(ms)) return "";
+  if (ms < 60_000) return "just now";
+  const min = Math.floor(ms / 60_000);
+  if (min < 60) return `${min} min ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} h ago`;
+  const d = Math.floor(h / 24);
+  if (d === 1) return "yesterday";
+  if (d < 60) return `${d} days ago`;
+  const mo = Math.floor(d / 30);
+  return mo < 24 ? `${mo} months ago` : `${Math.floor(d / 365)} years ago`;
+}

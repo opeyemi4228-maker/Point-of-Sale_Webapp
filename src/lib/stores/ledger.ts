@@ -18,7 +18,7 @@ import type { StockEntry } from "@/types/stock";
  * **Append-only, like the server ledger it stands in for.** There is no
  * `update` and no `delete` on this store: a mistake is corrected by appending
  * the opposite movement (CLAUDE.md rules 3 and 4), so the store exposes only
- * the two verbs that add.
+ * verbs that add.
  *
  * Persisted to `localStorage` because that is what makes it feel like one
  * system: a cashier rings a sale, the manager opens their dashboard in another
@@ -38,10 +38,17 @@ type LedgerState = {
   /** Reserve the next receipt number for a branch on a day. */
   nextSequence: (branchId: string, isoDay: string) => number;
   recordSale: (sale: Sale, movements: Omit<StockEntry, "id">[]) => void;
-  receiveStock: (movements: Omit<StockEntry, "id">[]) => void;
+  /**
+   * Append stock movements that are not a sale: deliveries, write-offs,
+   * adjustments and their reversals. Returns the entries as stored, ids
+   * included, so a screen can point at what it just wrote.
+   */
+  appendMovements: (movements: Omit<StockEntry, "id">[]) => StockEntry[];
   /** Development affordance only — clears the device, never the server. */
   reset: () => void;
 };
+
+const LEDGER_KEY = "swiftgrocers.ledger";
 
 let movementSequence = 0;
 const nextMovementId = () =>
@@ -70,23 +77,36 @@ export const useLedgerStore = create<LedgerState>()(
           ],
         })),
 
-      receiveStock: (movements) =>
-        set((state) => ({
-          movements: [
-            ...state.movements,
-            ...movements.map((movement) => ({ ...movement, id: nextMovementId() })),
-          ],
-        })),
+      appendMovements: (movements) => {
+        const written = movements.map((movement) => ({ ...movement, id: nextMovementId() }));
+        set((state) => ({ movements: [...state.movements, ...written] }));
+        return written;
+      },
 
       reset: () => set({ sales: [], movements: [], sequences: {} }),
     }),
     {
-      name: "swiftgrocers.ledger",
+      name: LEDGER_KEY,
       storage: createJSONStorage(() => localStorage),
       version: 1,
     },
   ),
 );
+
+/**
+ * Keep tabs on one device in step.
+ *
+ * Persist writes the whole store, so a tab holding an older copy would
+ * overwrite movements another tab had appended since — a sale rung at the till
+ * vanishing because a manager received a delivery in a tab opened earlier.
+ * That is an edit to an append-only ledger (rules 3 and 4). Re-reading storage
+ * whenever another tab writes means every append lands on the latest copy.
+ */
+if (typeof window !== "undefined") {
+  window.addEventListener("storage", (event) => {
+    if (event.key === LEDGER_KEY) void useLedgerStore.persist.rehydrate();
+  });
+}
 
 /**
  * Whether the persisted ledger has been read back off the device yet.

@@ -1,8 +1,14 @@
 import {
   ArrowRightLeft,
   Boxes,
+  Database,
   Building2,
+  CalendarX2,
   ChartColumn,
+  History,
+  PackageCheck,
+  TrendingUp,
+  Warehouse,
   ClipboardCheck,
   IdCard,
   LayoutDashboard,
@@ -30,7 +36,7 @@ export type NavItem = {
   shortLabel?: string;
   icon: LucideIcon;
   /** Key into the badge counts the sidebar is handed. Absent = never badged. */
-  badge?: "approvals" | "lowStock" | "exceptions";
+  badge?: "approvals" | "lowStock" | "exceptions" | "expired";
 };
 
 export type NavSection = {
@@ -78,6 +84,15 @@ export const NAVIGATION: Record<StaffRole, NavSection[]> = {
       title: "Stock",
       items: [
         { href: "/manager/stock", label: "Stock", icon: Package, badge: "lowStock" },
+        { href: "/manager/products", label: "Product database", icon: Database },
+        { href: "/manager/deliveries", label: "Deliveries", icon: PackageCheck },
+        {
+          href: "/manager/expiry",
+          label: "Expiry & write-offs",
+          icon: CalendarX2,
+          badge: "expired",
+        },
+        { href: "/manager/movements", label: "Stock ledger", icon: History },
         { href: "/manager/counts", label: "Counts", icon: ClipboardCheck },
         { href: "/manager/transfers", label: "Transfers", icon: ArrowRightLeft },
         { href: "/manager/orders", label: "Purchase orders", icon: Truck },
@@ -88,6 +103,7 @@ export const NAVIGATION: Record<StaffRole, NavSection[]> = {
       items: [
         { href: "/manager/staff", label: "Staff", icon: Users },
         { href: "/manager/customers", label: "Customers", icon: IdCard },
+        { href: "/manager/stock-sales", label: "Stock & sales", icon: TrendingUp },
         { href: "/manager/reports", label: "Reports", icon: ChartColumn },
       ],
     },
@@ -106,8 +122,24 @@ export const NAVIGATION: Record<StaffRole, NavSection[]> = {
       ],
     },
     {
+      title: "Inventory",
+      items: [
+        { href: "/hq/stock", label: "Branch stock", icon: Warehouse },
+        { href: "/hq/deliveries", label: "Deliveries", icon: PackageCheck },
+        { href: "/hq/orders", label: "Purchase orders", icon: Truck },
+        {
+          href: "/hq/expiry",
+          label: "Expiry & write-offs",
+          icon: CalendarX2,
+          badge: "expired",
+        },
+        { href: "/hq/stock-sales", label: "Stock & sales", icon: TrendingUp },
+      ],
+    },
+    {
       title: "Chain",
       items: [
+        { href: "/hq/products", label: "Product database", icon: Database },
         { href: "/hq/catalog", label: "Master catalog", icon: Boxes },
         { href: "/hq/staff", label: "Staff", icon: Users },
         { href: "/hq/devices", label: "Devices", icon: TabletSmartphone },

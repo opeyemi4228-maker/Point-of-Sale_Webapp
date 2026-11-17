@@ -31,7 +31,8 @@ export function SellersScreen({ isoDay }: { isoDay: string }) {
     : ZERO;
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto flex min-w-0 flex-col gap-5 p-5">
+    <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <div className="flex min-w-0 flex-col gap-5 p-5">
       <div className="grid min-w-0 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Panel>
           <StatTile label="Sales today" value={formatWhole(chainTotal)} hint="Every branch" />
@@ -140,6 +141,7 @@ export function SellersScreen({ isoDay }: { isoDay: string }) {
           </TableScroller>
         )}
       </Panel>
+    </div>
     </main>
   );
 }

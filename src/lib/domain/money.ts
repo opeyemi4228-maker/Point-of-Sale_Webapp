@@ -38,6 +38,18 @@ export function kobo(amount: number): Money {
 
 export const ZERO: Money = { kobo: 0 };
 
+/**
+ * A naira amount as somebody typed it — `3,700`, `₦3700.50`, ` 3700 ` — or
+ * null when it is blank or not a number. The one place form input becomes
+ * Money, so every cost field on every screen accepts the same things.
+ */
+export function parseNaira(text: string): Money | null {
+  const cleaned = text.replace(/[,\s₦]/g, "");
+  if (cleaned === "") return null;
+  const value = Number(cleaned);
+  return Number.isFinite(value) ? naira(value) : null;
+}
+
 /* ── Arithmetic ───────────────────────────────────────────────────────────── */
 
 export function add(a: Money, b: Money): Money {

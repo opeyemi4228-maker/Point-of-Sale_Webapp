@@ -1,15 +1,17 @@
 import type { Actor } from "@/lib/db";
 import { dbFor } from "@/lib/db";
-import { toCategory, toProduct, toSale, toStockEntry } from "./mappers";
+import { money, quantity, toCategory, toProduct, toSale, toStockEntry } from "./mappers";
 import type {
   BranchRepository,
   BranchSummary,
   CatalogRepository,
+  PurchasingRepository,
   SalesRepository,
   StockRepository,
 } from "../repositories";
 import type { StockEntry } from "@/types/stock";
 import type { Sale } from "@/types/sale";
+import type { PurchaseOrder } from "@/types/operations";
 
 /**
  * Prisma-backed repositories.
@@ -372,3 +374,62 @@ export function salesRepository(actor: Actor): SalesRepository {
   };
 }
 
+
+/* ── Purchase orders ──────────────────────────────────────────────────────── */
+
+/**
+ * Orders, mapped onto the richer screen type.
+ *
+ * The table predates supplier kind, notes and the who-did-what trail, so those
+ * fill with honest defaults rather than invented values. What has arrived is
+ * not read from `received_qty_milli` — screens derive it from the ledger, the
+ * same way they do in fixture mode, so there is one definition of "received".
+ *
+ * The ledger table has no `order_ref` column yet, so a receipt booked through
+ * the database names its order in `ref`; `orderProgress` accepts either.
+ */
+export function purchasingRepository(actor: Actor): PurchasingRepository {
+  const db = dbFor(actor);
+  return {
+    async listOrders() {
+      return db(async (tx) => {
+        const rows = await tx.purchaseOrder.findMany({
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            reference: true,
+            branchId: true,
+            supplier: true,
+            status: true,
+            expectedOn: true,
+            createdAt: true,
+            updatedAt: true,
+            lines: { select: { productId: true, qtyMilli: true, unitCostKobo: true } },
+          },
+        });
+        return rows.map(
+          (row): PurchaseOrder => ({
+            id: row.id,
+            reference: row.reference,
+            branchId: row.branchId,
+            supplier: row.supplier,
+            supplierKind: "supplier",
+            lines: row.lines.map((l) => ({
+              productId: l.productId,
+              quantity: quantity(l.qtyMilli),
+              unitCost: money(l.unitCostKobo),
+            })),
+            expectedOn: row.expectedOn ? row.expectedOn.toISOString().slice(0, 10) : null,
+            note: null,
+            createdAt: row.createdAt.toISOString(),
+            createdBy: "—",
+            sentAt: row.status === "draft" ? null : row.createdAt.toISOString(),
+            cancelledAt: row.status === "cancelled" ? row.updatedAt.toISOString() : null,
+            cancelledBy: null,
+            cancelReason: null,
+          }),
+        );
+      });
+    },
+  };
+}

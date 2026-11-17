@@ -10,7 +10,7 @@ import { WorkspaceDataProvider } from "./workspace-data";
  * chain's, without either layout saying so. The scoping is the database's job
  * (docs/DATABASE.md §3); this component only decides *when* to read.
  *
- * The three reads are independent, so they go out together. A workspace that
+ * The reads are independent, so they go out together. A workspace that
  * opens in three sequential round trips feels broken on a shop's connection.
  */
 export async function WorkspaceShell({
@@ -20,14 +20,15 @@ export async function WorkspaceShell({
 }) {
   const repositories = await getRepositories(await currentActor());
 
-  const [products, entries, branches] = await Promise.all([
+  const [products, entries, branches, orders] = await Promise.all([
     repositories.catalog.listProducts(),
     repositories.stock.listEntries(),
     repositories.branches.list(),
+    repositories.purchasing.listOrders(),
   ]);
 
   return (
-    <WorkspaceDataProvider value={{ products, entries, branches }}>
+    <WorkspaceDataProvider value={{ products, entries, branches, orders }}>
       {children}
     </WorkspaceDataProvider>
   );

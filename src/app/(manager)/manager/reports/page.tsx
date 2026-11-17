@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  CalendarX2,
+  TrendingUp,
   ChartColumn,
   ChevronRight,
   Download,
@@ -28,7 +30,27 @@ export const metadata: Metadata = {
  * and exports to CSV and XLSX because the finance team works in a spreadsheet
  * whatever we build.
  */
-const REPORTS = [
+const REPORTS: {
+  icon: typeof ChartColumn;
+  title: string;
+  detail: string;
+  meta: string;
+  href?: string;
+}[] = [
+  {
+    icon: TrendingUp,
+    title: "Stock & sales",
+    detail: "Takings by day and a full stock reconciliation: opening, received, sold, expired, lost and closing.",
+    meta: "Live · exports to CSV",
+    href: "/manager/stock-sales",
+  },
+  {
+    icon: CalendarX2,
+    title: "Expiry & write-offs",
+    detail: "Stock past its date, and the protected register of everything written off.",
+    meta: "Live · by reason",
+    href: "/manager/expiry",
+  },
   {
     icon: ChartColumn,
     title: "Sales",
@@ -37,15 +59,17 @@ const REPORTS = [
   },
   {
     icon: Percent,
-    title: "Margin",
-    detail: "Gross margin by line, with cost of goods at the price actually paid.",
-    meta: "By product and category",
+    title: "Product performance & margin",
+    detail: "ABC classes, gross margin, GMROI, sell-through, days of cover — and the dead stock tying up cash.",
+    meta: "Live · by product and category",
+    href: "/manager/reports/performance",
   },
   {
     icon: Package,
     title: "Shrinkage",
     detail: "Count variances, damage, expiry and theft, valued at cost.",
-    meta: "Per count and rolling 90 days",
+    meta: "Live · per stock count",
+    href: "/manager/counts",
   },
   {
     icon: Wallet,
@@ -89,10 +113,10 @@ export default function ManagerReportsPage() {
           />
 
           <ul className="divide-y divide-line">
-            {REPORTS.map(({ icon: Icon, title, detail, meta }) => (
+            {REPORTS.map(({ icon: Icon, title, detail, meta, href }) => (
               <li key={title}>
                 <Link
-                  href="/manager/reports"
+                  href={href ?? "/manager/reports"}
                   className="flex items-center gap-4 px-5 py-4 transition-colors duration-150 ease-out-pos hover:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-market"
                 >
                   <span

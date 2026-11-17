@@ -23,6 +23,7 @@ import { extendTailwindMerge } from "tailwind-merge";
 const FONT_SIZES = [
   "display-xl",
   "display-lg",
+  "display-md",
   "title",
   "body-lg",
   "body",

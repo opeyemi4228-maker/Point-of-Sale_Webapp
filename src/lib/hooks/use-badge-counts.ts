@@ -5,6 +5,7 @@ import { ZERO_QTY } from "@/lib/domain/quantity";
 import { isLow, isOversold } from "@/lib/domain/stock";
 import { useBranchData, useChainEntries } from "@/lib/hooks/use-branch-data";
 import { balancesForBranch } from "@/lib/domain/stock";
+import { batchesOnHand } from "@/lib/domain/inventory";
 import { useWorkspaceBranches, useLiveProducts } from "@/lib/data/workspace-data";
 import { useSessionStore } from "@/lib/stores/session";
 import { todayInLagos } from "@/lib/utils/format-date";
@@ -44,7 +45,12 @@ export function useBadgeCounts(): BadgeCounts {
         return !isOversold(onHand) && isLow(onHand, product.reorderLevel);
       }).length;
 
-      return { lowStock };
+      // Expired batches still estimated on the shelf — the expiry screen's list.
+      const expired = batchesOnHand(branch.entries, { today: day, soonDays: 0 }).filter(
+        (b) => b.status === "expired",
+      ).length;
+
+      return { lowStock, expired };
     }
 
     // HQ counts branches with something wrong, not products: a chain-wide
@@ -57,6 +63,10 @@ export function useBadgeCounts(): BadgeCounts {
       });
     }).length;
 
-    return { exceptions };
-  }, [staff, live, branches, branch.balances, chain.entries]);
+    const expired = batchesOnHand(chain.entries, { today: day, soonDays: 0 }).filter(
+      (b) => b.status === "expired",
+    ).length;
+
+    return { exceptions, expired };
+  }, [staff, live, branches, branch.balances, branch.entries, chain.entries, day]);
 }

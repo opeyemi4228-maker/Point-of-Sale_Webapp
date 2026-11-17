@@ -1,4 +1,5 @@
 import type {
+  PurchasingRepository,
   BranchRepository,
   CatalogRepository,
   CustomerRepository,
@@ -20,6 +21,7 @@ import {
 } from "@/lib/domain/loyalty";
 import { MOCK_CATEGORIES, MOCK_PRODUCTS } from "./catalog";
 import { MOCK_STOCK_LEDGER } from "./stock";
+import { MOCK_PURCHASE_ORDERS } from "./operations";
 import { MOCK_BRANCHES } from "./branches";
 import { MOCK_CUSTOMERS, MOCK_STAFF } from "./people";
 import {
@@ -317,5 +319,13 @@ export const mockDashboardRepository: DashboardRepository = {
   async hq() {
     await wait(LATENCY_MS);
     return MOCK_HQ_OVERVIEW;
+  },
+};
+
+/** Purchase orders — the fixture list, newest first. */
+export const mockPurchasingRepository: PurchasingRepository = {
+  async listOrders() {
+    await wait(LATENCY_MS);
+    return [...MOCK_PURCHASE_ORDERS].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   },
 };

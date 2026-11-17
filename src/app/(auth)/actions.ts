@@ -224,6 +224,7 @@ async function signInWithFixtures(
   secret: string,
 ): Promise<SignInResult> {
   const { DEMO_ACCOUNTS } = await import("@/config/demo-accounts");
+  const { CURRENT_BRANCH_ID } = await import("@/lib/data/mock/branches");
 
   const account = DEMO_ACCOUNTS.find(
     (a) => a.identifier.toLowerCase() === identifier.toLowerCase(),
@@ -232,8 +233,10 @@ async function signInWithFixtures(
   if (!account || account.secret !== secret) return REFUSED;
 
   // Stable ids so a fixture session survives a reload and reads the same rows.
+  // The branch must be the fixtures' own id: an invented one matched no ledger
+  // row, so a demo manager saw every line at zero.
   const staffId = `demo-${account.role}`;
-  const branchId = account.role === "general_admin" ? null : "demo-branch-gwarinpa";
+  const branchId = account.role === "general_admin" ? null : CURRENT_BRANCH_ID;
 
   await startSession({ staffId, role: account.role, branchId });
 

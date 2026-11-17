@@ -24,7 +24,50 @@ const hourLabel = (hour: number) => `${String(hour).padStart(2, "0")}:00`;
  * is the relief for anyone who cannot use the hover layer.
  */
 export function HourlySalesChart({ buckets }: { buckets: readonly HourlyBucket[] }) {
+  return (
+    <SalesColumnChart
+      caption="Sales by hour"
+      keyHeading="Hour"
+      buckets={buckets.map((b) => ({
+        key: String(b.hour),
+        label: hourLabel(b.hour),
+        tick: String(b.hour).padStart(2, "0"),
+        total: b.total,
+        transactions: b.transactions,
+      }))}
+    />
+  );
+}
+
+export type ColumnBucket = {
+  key: string;
+  /** Full label for the tooltip and the table, e.g. `08:00` or `17 Nov`. */
+  label: string;
+  /** Short axis tick. */
+  tick: string;
+  total: Money;
+  transactions: number;
+};
+
+/**
+ * Takings as columns over any run of buckets — hours of a day, days of a
+ * month. One series, one axis; the rules are the ones described above.
+ */
+export function SalesColumnChart({
+  buckets,
+  caption,
+  keyHeading,
+  countNoun = "transactions",
+}: {
+  buckets: readonly ColumnBucket[];
+  caption: string;
+  keyHeading: string;
+  /** What `transactions` counts, for the tooltip and the table. */
+  countNoun?: string;
+}) {
   const [active, setActive] = useState<number | null>(null);
+  // Thin the axis labels so they never collide, however many columns there are.
+  const tickEvery = Math.max(1, Math.ceil(buckets.length / 12));
 
   const peakNaira = Math.max(...buckets.map((b) => toNaira(b.total)), 0);
   const ceiling = niceCeiling(peakNaira);
@@ -76,13 +119,13 @@ export function HourlySalesChart({ buckets }: { buckets: readonly HourlyBucket[]
 
               return (
                 <button
-                  key={bucket.hour}
+                  key={bucket.key}
                   type="button"
                   onMouseEnter={() => setActive(index)}
                   onMouseLeave={() => setActive(null)}
                   onFocus={() => setActive(index)}
                   onBlur={() => setActive(null)}
-                  aria-label={`${hourLabel(bucket.hour)}, ${format(bucket.total)} across ${bucket.transactions} transactions`}
+                  aria-label={`${bucket.label}, ${format(bucket.total)} across ${bucket.transactions} ${countNoun}`}
                   className="group relative flex h-full flex-1 cursor-default flex-col justify-end rounded-t-[4px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-market"
                 >
                   {/* Direct label on the peak only — never a number on every column */}
@@ -109,13 +152,13 @@ export function HourlySalesChart({ buckets }: { buckets: readonly HourlyBucket[]
                       className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 w-max -translate-x-1/2 rounded-input border border-line bg-surface px-3 py-2 text-left shadow-raised"
                     >
                       <p className="font-numeric text-label text-ink-40">
-                        {hourLabel(bucket.hour)}
+                        {bucket.label}
                       </p>
                       <p className="font-numeric font-semibold text-ink">
                         {format(bucket.total)}
                       </p>
                       <p className="text-label text-ink-40">
-                        {bucket.transactions} transactions
+                        {bucket.transactions} {countNoun}
                       </p>
                     </div>
                   )}
@@ -128,13 +171,13 @@ export function HourlySalesChart({ buckets }: { buckets: readonly HourlyBucket[]
           <div className="mt-2 flex gap-0.5" aria-hidden>
             {buckets.map((bucket, index) => (
               <span
-                key={bucket.hour}
+                key={bucket.key}
                 className={cn(
                   "font-numeric flex-1 text-center text-label",
                   active === index ? "text-ink" : "text-ink-40",
                 )}
               >
-                {index % 2 === 0 ? String(bucket.hour).padStart(2, "0") : ""}
+                {index % tickEvery === 0 ? bucket.tick : ""}
               </span>
             ))}
           </div>
@@ -144,18 +187,18 @@ export function HourlySalesChart({ buckets }: { buckets: readonly HourlyBucket[]
       {/* The table view — the relief the hover layer cannot give */}
       <figcaption className="sr-only">
         <table>
-          <caption>Sales by hour</caption>
+          <caption>{caption}</caption>
           <thead>
             <tr>
-              <th scope="col">Hour</th>
+              <th scope="col">{keyHeading}</th>
               <th scope="col">Sales</th>
-              <th scope="col">Transactions</th>
+              <th scope="col" className="capitalize">{countNoun}</th>
             </tr>
           </thead>
           <tbody>
             {buckets.map((bucket) => (
-              <tr key={bucket.hour}>
-                <th scope="row">{hourLabel(bucket.hour)}</th>
+              <tr key={bucket.key}>
+                <th scope="row">{bucket.label}</th>
                 <td>{format(bucket.total)}</td>
                 <td>{bucket.transactions}</td>
               </tr>

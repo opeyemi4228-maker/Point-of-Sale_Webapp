@@ -1,6 +1,7 @@
 import { naira } from "@/lib/domain/money";
 import { units } from "@/lib/domain/quantity";
 import { CURRENT_BRANCH_ID } from "./branches";
+import { MOCK_PRODUCTS } from "./catalog";
 import type {
   Approval,
   AuditEntry,
@@ -133,47 +134,99 @@ export const MOCK_TRANSFERS: Transfer[] = [
   },
 ];
 
+const costOf = (productId: string) =>
+  MOCK_PRODUCTS.find((p) => p.id === productId)?.cost ?? naira(0);
+
+const line = (productId: string, qty: number) => ({
+  productId,
+  quantity: units(qty),
+  unitCost: costOf(productId),
+});
+
+const order = (
+  o: Pick<PurchaseOrder, "id" | "reference" | "branchId" | "supplier" | "lines" | "createdAt"> &
+    Partial<PurchaseOrder>,
+): PurchaseOrder => ({
+  supplierKind: "supplier",
+  expectedOn: null,
+  note: null,
+  createdBy: "Ifeoma Nwosu",
+  sentAt: null,
+  cancelledAt: null,
+  cancelledBy: null,
+  cancelReason: null,
+  ...o,
+});
+
+/**
+ * Orders across the chain. What has *arrived* against each is not written
+ * here — it is the receipts in `MOCK_STOCK_LEDGER` that carry the order's
+ * reference (see `PO_RECEIPTS` in ./stock.ts), so the statuses on screen are
+ * derived exactly as they will be from the real ledger.
+ */
 export const MOCK_PURCHASE_ORDERS: PurchaseOrder[] = [
-  {
-    id: "po_0118",
-    reference: "PO-0118",
-    supplier: "Dangote Distribution",
-    status: "sent",
-    lines: 9,
-    total: naira(864_000),
-    expectedOn: "2026-08-11",
-    createdAt: "2026-08-08T11:00:00+01:00",
-  },
-  {
-    id: "po_0117",
-    reference: "PO-0117",
-    supplier: "Honeywell Flour Mills",
-    status: "partially_received",
-    lines: 5,
-    total: naira(412_500),
-    expectedOn: "2026-08-09",
-    createdAt: "2026-08-06T09:30:00+01:00",
-  },
-  {
+  order({
     id: "po_0116",
     reference: "PO-0116",
+    branchId: "brn_gwarinpa",
     supplier: "Chi Limited",
-    status: "received",
-    lines: 7,
-    total: naira(298_400),
+    lines: [line("prd_water_75cl", 96), line("prd_malt", 72)],
     expectedOn: "2026-08-05",
-    createdAt: "2026-08-02T14:10:00+01:00",
-  },
-  {
+    createdAt: "2026-08-02T13:10:00Z",
+    sentAt: "2026-08-02T13:25:00Z",
+  }),
+  order({
+    id: "po_0117",
+    reference: "PO-0117",
+    branchId: "brn_gwarinpa",
+    supplier: "Honeywell Flour Mills",
+    lines: [line("prd_spaghetti", 60), line("prd_garri", 40), line("prd_rice_5kg", 30)],
+    expectedOn: "2026-08-09",
+    createdAt: "2026-08-06T08:30:00Z",
+    sentAt: "2026-08-06T08:41:00Z",
+  }),
+  order({
+    id: "po_0118",
+    reference: "PO-0118",
+    branchId: "brn_gwarinpa",
+    supplier: "Dangote Distribution",
+    lines: [line("prd_sugar_1kg", 120), line("prd_oil_3l", 40)],
+    expectedOn: "2026-08-11",
+    createdAt: "2026-08-08T10:00:00Z",
+    sentAt: "2026-08-08T10:05:00Z",
+    note: "Sugar is on the reorder list — chase if not here by Tuesday.",
+  }),
+  order({
     id: "po_0119",
     reference: "PO-0119",
+    branchId: "brn_gwarinpa",
     supplier: "Nestlé Nigeria",
-    status: "draft",
-    lines: 4,
-    total: naira(186_200),
-    expectedOn: null,
-    createdAt: "2026-08-09T08:45:00+01:00",
-  },
+    lines: [line("prd_peak_400g", 96), line("prd_butter", 48)],
+    createdAt: "2026-08-09T07:45:00Z",
+  }),
+  order({
+    id: "po_0121",
+    reference: "PO-0121",
+    branchId: "brn_lekki",
+    supplier: "Swiftgrocers Central Warehouse",
+    supplierKind: "warehouse",
+    lines: [line("prd_oil_3l", 60), line("prd_rice_5kg", 40), line("prd_tissue", 80)],
+    expectedOn: "2026-11-19",
+    createdAt: "2026-11-12T09:00:00Z",
+    sentAt: "2026-11-12T09:02:00Z",
+    createdBy: "Ada Mbeki",
+  }),
+  order({
+    id: "po_0122",
+    reference: "PO-0122",
+    branchId: "brn_ikeja",
+    supplier: "Jos Fresh Farms Co-op",
+    lines: [line("prd_tomatoes", 80), line("prd_onions", 60), line("prd_eggs_crate", 30)],
+    expectedOn: "2026-11-16",
+    createdAt: "2026-11-14T07:30:00Z",
+    sentAt: "2026-11-14T07:31:00Z",
+    createdBy: "Chidi Obi",
+  }),
 ];
 
 export const MOCK_DEVICES: Device[] = [

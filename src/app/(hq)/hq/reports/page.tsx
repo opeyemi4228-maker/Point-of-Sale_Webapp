@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
+  CalendarX2,
+  TrendingUp,
   ArrowRightLeft,
   ChartColumn,
   ChevronRight,
@@ -26,7 +28,27 @@ export const metadata: Metadata = {
  * one branch: how branches compare, how stock flows between them, and what the
  * loyalty programme actually costs against what it returns.
  */
-const REPORTS = [
+const REPORTS: {
+  icon: typeof ChartColumn;
+  title: string;
+  detail: string;
+  meta: string;
+  href?: string;
+}[] = [
+  {
+    icon: TrendingUp,
+    title: "Stock & sales",
+    detail: "Takings by day and a full stock reconciliation: opening, received, sold, expired, lost and closing.",
+    meta: "Live · exports to CSV",
+    href: "/hq/stock-sales",
+  },
+  {
+    icon: CalendarX2,
+    title: "Expiry & write-offs",
+    detail: "Stock past its date, and the protected register of everything written off.",
+    meta: "Live · by reason",
+    href: "/hq/expiry",
+  },
   {
     icon: Store,
     title: "Branch comparison",
@@ -36,8 +58,9 @@ const REPORTS = [
   {
     icon: ChartColumn,
     title: "Chain product performance",
-    detail: "What sells where. Lines that move in Lagos and sit in Abuja.",
-    meta: "By product, category and branch",
+    detail: "What sells where. ABC classes, margin, GMROI and dead stock — chain-wide or one branch at a time.",
+    meta: "Live · by product, category and branch",
+    href: "/hq/reports/performance",
   },
   {
     icon: ArrowRightLeft,
@@ -84,10 +107,10 @@ export default function HqReportsPage() {
           <PanelHeader title="Reports" meta="Every report exports to CSV and XLSX" />
 
           <ul className="divide-y divide-line">
-            {REPORTS.map(({ icon: Icon, title, detail, meta }) => (
+            {REPORTS.map(({ icon: Icon, title, detail, meta, href }) => (
               <li key={title}>
                 <Link
-                  href={title === "Audit explorer" ? "/hq/audit" : "/hq/reports"}
+                  href={href ?? (title === "Audit explorer" ? "/hq/audit" : "/hq/reports")}
                   className="flex items-center gap-4 px-5 py-4 transition-colors duration-150 ease-out-pos hover:bg-paper focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-market"
                 >
                   <span

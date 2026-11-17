@@ -68,7 +68,8 @@ export function ChainStockScreen() {
   const linesOversold = rows.filter((row) => row.branchesOversold > 0).length;
 
   return (
-    <main className="min-h-0 flex-1 overflow-y-auto flex min-w-0 flex-col gap-5 p-5">
+    <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+      <div className="flex min-w-0 flex-col gap-5 p-5">
       <div className="grid min-w-0 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Panel>
           <StatTile label="Stock value" value={formatWhole(chainValue)} hint="At cost, chain-wide" />
@@ -163,6 +164,7 @@ export function ChainStockScreen() {
           till that kept trading offline.
         </p>
       </Panel>
+    </div>
     </main>
   );
 }

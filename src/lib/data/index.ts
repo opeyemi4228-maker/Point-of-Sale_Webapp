@@ -9,6 +9,7 @@ import {
   mockShiftRepository,
   mockStaffRepository,
   mockStockRepository,
+  mockPurchasingRepository,
 } from "./mock/repos";
 
 /**
@@ -28,6 +29,7 @@ export const mockRepositories: Repositories = {
   branches: mockBranchRepository,
   catalog: mockCatalogRepository,
   stock: mockStockRepository,
+  purchasing: mockPurchasingRepository,
   sales: mockSalesRepository,
   shifts: mockShiftRepository,
   staff: mockStaffRepository,

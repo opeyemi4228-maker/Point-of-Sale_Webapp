@@ -42,16 +42,52 @@ export type Transfer = {
   requestedAt: string;
 };
 
-/** A purchase order to a supplier — SPEC §7.7. */
+/**
+ * A purchase order to the warehouse or a supplier — SPEC §7.7.
+ *
+ * Records what was *asked for*. What actually arrived is never stored here: it
+ * is the `PURCHASE_RECEIPT` movements whose `orderRef` is this order's
+ * reference, so the order and the stock ledger cannot disagree about how much
+ * landed (CLAUDE.md rule 3). Status follows from the same rows — see
+ * `orderProgress` in `lib/domain/purchasing.ts`.
+ *
+ * Never deleted (rule 4). A draft that is no longer wanted is cancelled, with
+ * a reason, and stays on the list.
+ */
 export type PurchaseOrder = {
   id: string;
+  /** `PO-GWA-0120` — what is written on the supplier's paperwork. */
   reference: string;
+  branchId: string;
   supplier: string;
-  status: "draft" | "sent" | "partially_received" | "received" | "cancelled";
-  lines: number;
-  total: Money;
+  supplierKind: "warehouse" | "supplier";
+  lines: PurchaseOrderLine[];
+  /** Lagos calendar day the delivery is promised for. */
   expectedOn: string | null;
+  note: string | null;
   createdAt: string;
+  createdBy: string;
+  /** Null while a draft. */
+  sentAt: string | null;
+  cancelledAt: string | null;
+  cancelledBy: string | null;
+  cancelReason: string | null;
+};
+
+export type PurchaseOrderLine = {
+  productId: string;
+  quantity: Quantity;
+  /** Agreed price per unit. What was actually paid is on each receipt. */
+  unitCost: Money;
+};
+
+/** One thing that happened to an order — the trail shown under it. */
+export type PurchaseOrderEvent = {
+  orderId: string;
+  action: "raised" | "edited" | "sent" | "cancelled";
+  at: string;
+  by: string;
+  detail?: string;
 };
 
 /** A registered till — SPEC §7.2, §16 admin. */

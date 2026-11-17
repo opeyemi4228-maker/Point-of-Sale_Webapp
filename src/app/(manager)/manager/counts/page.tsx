@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
 import { BranchLabel } from "@/components/shared/branch-label";
-import { MovementsScreen } from "@/components/manager/movements-screen";
+import { CountsScreen } from "@/components/counts/counts-screen";
 import { WorkspaceHeader } from "@/components/shared/workspace-header";
+import { todayInLagos } from "@/lib/utils/format-date";
 
-export const metadata: Metadata = { title: "Stock movements · Swiftgrocers POS" };
+export const metadata: Metadata = { title: "Stock counts · Swiftgrocers POS" };
 
 /**
- * The ledger, read straight — SPEC §10.1.
- *
- * Filed under Counts because a count is the reason a manager opens it: they
- * have a number that disagrees with the shelf and need the movements behind it.
+ * Stock counts — SPEC §10.3. Cycle counts, category counts and the full
+ * stock-take; variances post to the ledger as count adjustments.
  */
 export default function ManagerCountsPage() {
   return (
     <>
-      <WorkspaceHeader
-        title="Stock movements"
-        subtitle={<BranchLabel suffix="every change, newest first" />}
-      />
-      <MovementsScreen />
+      <WorkspaceHeader title="Stock counts" subtitle={<BranchLabel suffix="cycle counts and stock-takes" />} />
+      <CountsScreen today={todayInLagos()} />
     </>
   );
 }

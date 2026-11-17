@@ -3,6 +3,7 @@
 import { createContext, useContext } from "react";
 import type { Product } from "@/types/catalog";
 import type { StockEntry } from "@/types/stock";
+import type { PurchaseOrder } from "@/types/operations";
 import type { BranchSummary } from "./repositories";
 
 /**
@@ -29,9 +30,11 @@ export type WorkspaceData = {
   /** Every movement the signed-in actor is allowed to see. */
   entries: StockEntry[];
   branches: BranchSummary[];
+  /** Purchase orders the actor may see. Local ones are merged on top. */
+  orders: PurchaseOrder[];
 };
 
-const EMPTY: WorkspaceData = { products: [], entries: [], branches: [] };
+const EMPTY: WorkspaceData = { products: [], entries: [], branches: [], orders: [] };
 
 const WorkspaceDataContext = createContext<WorkspaceData>(EMPTY);
 
